@@ -1,9 +1,13 @@
 # CAT_memory_paper
 
 Codes for the paper:
+
 Memory for Individual Items is Related to Non-Reinforced Preference Change
+
 Rotem Botvinik-Nezer, Akram Bakkour, Tom Salomon, Daphna Shohamy and Tom Schonberg
+
 Currently on BioRxiv:
+
 *** link ***
 
 1. Directory "experiment_codes" includes the codes for running the experiment.
