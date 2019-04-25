@@ -6,7 +6,7 @@ Memory for Individual Items is Related to Non-Reinforced Preference Change
 
 Rotem Botvinik-Nezer, Akram Bakkour, Tom Salomon, Daphna Shohamy and Tom Schonberg
 
-Currently on BioRxiv:
+Currently on bioRxiv:
 
 *** link ***
 
@@ -25,5 +25,6 @@ http://schonberglab.tau.ac.il/resources/snack-food-image-database/
 
 2. Directory "analysis_codes" includes the codes for analyzing the data from all experiments.
 The analysis was performed with R version 3.3.3
+To run the codes you need to insert the correct path of the data files in the code.
 
 3. Directory "data" includes the data from all experiments as Rdata files
