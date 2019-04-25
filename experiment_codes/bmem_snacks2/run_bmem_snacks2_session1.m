@@ -9,7 +9,7 @@ function run_bmem_snacks2_session1()
 % The try-catch is because the mac caused an error with opening the screen
 % from time to time, so we want to prevent it from failing.
 % This version is for running only 40 items in training!
-% 20 runs in the training session
+% 16 runs in the training session
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % % % ---------------- FUNCTIONS REQUIRED TO RUN PROPERLY: ----------------
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

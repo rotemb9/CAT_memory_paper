@@ -19,7 +19,7 @@ function run_bmem_snacks_day1()
 % from time to time, so we want to prevent it from failing.
 
 % This version is for running only 40 items in training!
-% 20 runs in the training session
+% 16 runs in the training session
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % % % ---------------- FUNCTIONS REQUIRED TO RUN PROPERLY: ----------------
@@ -147,7 +147,7 @@ sort_BDM(subjectID,order,outputPath);
 
 % Set number of runs
 % -------------------------------------------------
-total_num_runs_training = 20;
+total_num_runs_training = 16;
 
 
 % for debugging:
