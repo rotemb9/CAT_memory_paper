@@ -10,6 +10,8 @@ Currently on bioRxiv:
 
 *** https://doi.org/10.1101/621292 ***
 
+First release (preprint version): https://doi.org/10.5281/zenodo.3633203
+
 1. Directory "experiment_codes" includes the codes for running the experiment.
 * Pilot Experiment- "bmem_snacks"
 * Experiment 1- "bmem_snacks2"
