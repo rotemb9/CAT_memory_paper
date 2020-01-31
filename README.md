@@ -8,7 +8,7 @@ Rotem Botvinik-Nezer, Akram Bakkour, Tom Salomon, Daphna Shohamy and Tom Schonbe
 
 Currently on BioRxiv:
 
-*** link ***
+*** https://doi.org/10.1101/843193 ***
 
 1. Directory "experiment_codes" includes the codes for running the experiment.
 * Pilot Experiment- "bmem_snacks"
