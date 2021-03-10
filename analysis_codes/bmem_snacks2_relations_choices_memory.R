@@ -9,14 +9,14 @@ library(reshape2)
 rm(list=ls())
 
 # choose sessions
-sessionNum_probe = 2
-sessionNum_recognition = 2
+sessionNum_probe = 3
+sessionNum_recognition = 3
 
 experiment_name="bmem_snacks2"
 
 # Define the local path where the data can be found
 # you will need to set the correct path whre the RData file with the data is located
-input_path="DEFINE PATH OF DATA HERE"
+input_file_path="DEFINE PATH OF DATA HERE"
 
 # load data
 filename=paste(input_path,experiment_name,"_probe", sessionNum_probe, "_recognition", sessionNum_recognition, ".Rdata",sep="")
@@ -34,57 +34,75 @@ num_participants_recognition=count_unique(recognition_data$subjectID)
 print(paste("Number of participants in recognition data: ", num_participants_recognition, " Session: ", sessionNum_recognition, SEP=""))
 
 # analyze relations between choices and memory, on a trial by trial basis
+probe_data$accuracy_category = NA
+probe_data$accuracy_category[(probe_data$Accuracy_old_goItem & probe_data$Accuracy_old_nogoItem) | (!probe_data$Accuracy_old_goItem & !probe_data$Accuracy_old_nogoItem)] = "Both remembered / forgotten"
+probe_data$accuracy_category[probe_data$Accuracy_old_goItem & !probe_data$Accuracy_old_nogoItem] = "Go remembered, NoGo forgotten"
+probe_data$accuracy_category[!probe_data$Accuracy_old_goItem & probe_data$Accuracy_old_nogoItem] = "Go forgotten, NoGo remembered"
 
-# probe analysis HV with regressors accuracy Go, 1-accuracy NoGo
-HV_intercept_model=glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data,probe_data$PairType2=='High_Value' & !is.na(probe_data$Accuracy_old_goItem) & !is.na(probe_data$inv_Accuracy_old_nogoItem)),na.action=na.omit,family=binomial)
-HV_accuracy_model=glmer(Outcome ~ 1 + Accuracy_old_goItem + inv_Accuracy_old_nogoItem + (1|subjectID),data=subset(probe_data,probe_data$PairType2=='High_Value' & !is.na(probe_data$Accuracy_old_goItem) & !is.na(probe_data$inv_Accuracy_old_nogoItem)),na.action=na.omit,family=binomial)
+probe_data$PairType3.ind = NA
+probe_data$PairType3.ind[probe_data$PairType3 == "High_Value"] = 1;
+probe_data$PairType3.ind[probe_data$PairType3 == "Low_Value"] = 0;
+
+# probe analysis HV with accuracy
+HV_accuracy_model=glmer(Outcome ~ 1 + accuracy_category + (1 + accuracy_category|subjectID),data=subset(probe_data,probe_data$PairType2=='High_Value' & !is.na(probe_data$accuracy_category)),na.action=na.omit,family=binomial)
 HV_accuracy=summary(HV_accuracy_model)
-HV_accuracy_joint=anova(HV_intercept_model, HV_accuracy_model)
 
-# probe analysis LV with regressors accuracy Go, 1-accuracy NoGo
-LV_intercept_model=glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data,probe_data$PairType2=='Low_Value' & !is.na(probe_data$Accuracy_old_goItem) & !is.na(probe_data$inv_Accuracy_old_nogoItem)),na.action=na.omit,family=binomial)
-LV_accuracy_model=glmer(Outcome ~ 1 + Accuracy_old_goItem + inv_Accuracy_old_nogoItem + (1|subjectID),data=subset(probe_data,probe_data$PairType2=='Low_Value' & !is.na(probe_data$Accuracy_old_goItem) & !is.na(probe_data$inv_Accuracy_old_nogoItem)),na.action=na.omit,family=binomial)
-LV_accuracy=summary(LV_accuracy_model)
-LV_accuracy_joint=anova(LV_intercept_model, LV_accuracy_model)
+if (sessionNum_probe==2 & sessionNum_recognition==2) {
+  # probe analysis LV with accuracy
+  LV_accuracy_model=glmer(Outcome ~ 1 + accuracy_category + (1|subjectID),data=subset(probe_data,probe_data$PairType2=='Low_Value' & !is.na(probe_data$accuracy_category)),na.action=na.omit,family=binomial)
+  LV_accuracy=summary(LV_accuracy_model)
 
-# interaction between memory regressors and the value level (high-value / low-value)
-intercept_and_value_model=glmer(Outcome ~ 1 + Accuracy_old_goItem + inv_Accuracy_old_nogoItem + PairType3 + (1|subjectID),data=subset(probe_data,probe_data$PairType<=2),na.action=na.omit,family=binomial)
-interaction_accuracy_model=glmer(Outcome ~ 1 + Accuracy_old_goItem + inv_Accuracy_old_nogoItem + PairType3 + Accuracy_old_goItem:PairType3 + inv_Accuracy_old_nogoItem:PairType3 + (1|subjectID),data=subset(probe_data,probe_data$PairType<=2),na.action=na.omit,family=binomial)
-interaction_accuracy=summary(interaction_accuracy_model)
-interaction_accuracy_joint=anova(intercept_and_value_model, interaction_accuracy_model)
-
+  # interaction between accuracy and the value level (high-value / low-value)
+  intercept_and_value_model=glmer(Outcome ~ 1 + accuracy_category + PairType3 + (1 + accuracy_category + PairType3.ind|subjectID),data=subset(probe_data,probe_data$PairType<=2 & !is.na(probe_data$accuracy_category)),na.action=na.omit,family=binomial)
+  interaction_accuracy_model=glmer(Outcome ~ 1 + accuracy_category * PairType3 + (1 + accuracy_category + PairType3.ind|subjectID),data=subset(probe_data,probe_data$PairType<=2 & !is.na(probe_data$accuracy_category)),na.action=na.omit,family=binomial)
+  interaction_accuracy=summary(interaction_accuracy_model)
+  interaction_accuracy_joint=anova(intercept_and_value_model, interaction_accuracy_model)
+}
+  
+if (sessionNum_probe==3 & sessionNum_recognition==3) {
+  # probe analysis LV with  accuracy
+  LV_accuracy_model=glmer(Outcome ~ 1 + accuracy_category + (1 + accuracy_category|subjectID),data=subset(probe_data,probe_data$PairType2=='Low_Value' & !is.na(probe_data$accuracy_category)),na.action=na.omit,family=binomial)
+  LV_accuracy=summary(LV_accuracy_model)
+  
+  # interaction between accuracy and the value level (high-value / low-value)
+  intercept_and_value_model=glmer(Outcome ~ 1 + accuracy_category + PairType3 + (1 + accuracy_category + PairType3.ind||subjectID),data=subset(probe_data,probe_data$PairType<=2 & !is.na(probe_data$accuracy_category)),na.action=na.omit,family=binomial)
+  interaction_accuracy_model=glmer(Outcome ~ 1 + accuracy_category * PairType3 + (1 + accuracy_category + PairType3.ind|subjectID),data=subset(probe_data,probe_data$PairType<=2 & !is.na(probe_data$accuracy_category)),na.action=na.omit,family=binomial)
+  interaction_accuracy=summary(interaction_accuracy_model)
+  interaction_accuracy_joint=anova(intercept_and_value_model, interaction_accuracy_model)
+}  
+  
 # probe analysis HV with regressor RT difference NoGo-Go only for pairs where both items were remembered
-HV_RT=summary(glmer(Outcome ~ 1 + RT_old_nogo_minus_go + (1|subjectID),data=subset(probe_only_remembered_items,(probe_only_remembered_items$PairType2=='High_Value')),na.action=na.omit,family=binomial)) 
+HV_RT=summary(glmer(Outcome ~ 1 + RT_old_nogo_minus_go + (1 + RT_old_nogo_minus_go|subjectID),data=subset(probe_only_remembered_items,(probe_only_remembered_items$PairType2=='High_Value')),na.action=na.omit,family=binomial)) 
 
 # probe analysis LV with regressor RT difference NoGo-Go only for pairs where both items were remembered
-LV_RT=summary(glmer(Outcome ~ 1 + RT_old_nogo_minus_go + (1|subjectID),data=subset(probe_only_remembered_items,(probe_only_remembered_items$PairType2=='Low_Value')),na.action=na.omit,family=binomial)) 
+LV_RT=summary(glmer(Outcome ~ 1 + RT_old_nogo_minus_go + (1 + RT_old_nogo_minus_go|subjectID),data=subset(probe_only_remembered_items,(probe_only_remembered_items$PairType2=='Low_Value')),na.action=na.omit,family=binomial)) 
 
 # probe analysis with regressors value (HV/LV), RT difference NoGo-Go and the interaction, only for pairs where both items were remembered
-interaction_RT=summary(glmer(Outcome ~ 1 + PairType3 * RT_old_nogo_minus_go + (1|subjectID),data=subset(probe_only_remembered_items,(probe_only_remembered_items$PairType<=2)),na.action=na.omit,family=binomial)) 
+interaction_RT=summary(glmer(Outcome ~ 1 + PairType3 * RT_old_nogo_minus_go + (1 + PairType3 + RT_old_nogo_minus_go|subjectID),data=subset(probe_only_remembered_items,(probe_only_remembered_items$PairType<=2)),na.action=na.omit,family=binomial)) 
 
 # create a table with all results
 df_results=data.frame(row.names=1:3)
-#df_results$probe_session=sessionNum_probe
-#df_results$recognition_session=sessionNum_recognition
 df_results$value_level=c("HV", "LV", "Interaction with value level")
-# accuracy Go
-accuracy_Go_estimate=c(HV_accuracy$coefficients[2,1], LV_accuracy$coefficients[2,1],interaction_accuracy$coefficients[5,1])
-accuracy_Go_odds_ratio=round(exp(accuracy_Go_estimate),3)
-accuracy_Go_CI_min=round(exp(c(HV_accuracy$coefficients[2,1], LV_accuracy$coefficients[2,1],interaction_accuracy$coefficients[5,1])-(1.96*c(HV_accuracy$coefficients[2,2], LV_accuracy$coefficients[2,2],interaction_accuracy$coefficients[5,2]))),3)
-accuracy_Go_CI_max=round(exp(c(HV_accuracy$coefficients[2,1], LV_accuracy$coefficients[2,1],interaction_accuracy$coefficients[5,1])+(1.96*c(HV_accuracy$coefficients[2,2], LV_accuracy$coefficients[2,2],interaction_accuracy$coefficients[5,2]))),3)
-accuracy_Go_one_sided_p=round(c(HV_accuracy$coefficients[2,4], LV_accuracy$coefficients[2,4],interaction_accuracy$coefficients[5,4])/2,3)
-df_results$accuracy_Go_P=accuracy_Go_one_sided_p
-df_results$accuracy_Go_odds_ratio=accuracy_Go_odds_ratio
-df_results$accuracy_Go_CI = paste(accuracy_Go_CI_min, '-',accuracy_Go_CI_max,sep="")
-# inverse accuracy NoGo
-inverse_accuracy_NoGo_estimate=c(HV_accuracy$coefficients[3,1], LV_accuracy$coefficients[3,1],interaction_accuracy$coefficients[6,1])
-inverse_accuracy_NoGo_odds_ratio=round(exp(inverse_accuracy_NoGo_estimate),3)
-inverse_accuracy_NoGo_CI_min=round(exp(c(HV_accuracy$coefficients[3,1], LV_accuracy$coefficients[3,1],interaction_accuracy$coefficients[6,1])-(1.96*c(HV_accuracy$coefficients[3,2], LV_accuracy$coefficients[3,2],interaction_accuracy$coefficients[6,2]))),3)
-inverse_accuracy_NoGo_CI_max=round(exp(c(HV_accuracy$coefficients[3,1], LV_accuracy$coefficients[3,1],interaction_accuracy$coefficients[6,1])+(1.96*c(HV_accuracy$coefficients[3,2], LV_accuracy$coefficients[3,2],interaction_accuracy$coefficients[6,2]))),3)
-inverse_accuracy_NoGo_one_sided_p=round(c(HV_accuracy$coefficients[3,4], LV_accuracy$coefficients[3,4],interaction_accuracy$coefficients[6,4])/2,3)
-df_results$inverse_accuracy_NoGo_P=inverse_accuracy_NoGo_one_sided_p
-df_results$inverse_accuracy_NoGo_odds_ratio=inverse_accuracy_NoGo_odds_ratio
-df_results$inverse_accuracy_NoGo_CI = paste(inverse_accuracy_NoGo_CI_min, '-',inverse_accuracy_NoGo_CI_max,sep="")
+
+# accuracy Go remembered NoGo forgotten
+accuracy_Go_remembered_estimate=c(HV_accuracy$coefficients[3,1], LV_accuracy$coefficients[3,1],interaction_accuracy$coefficients[6,1])
+accuracy_Go_remembered_odds_ratio=round(exp(accuracy_Go_remembered_estimate),3)
+accuracy_Go_remembered_CI_min=round(exp(c(HV_accuracy$coefficients[3,1], LV_accuracy$coefficients[3,1],interaction_accuracy$coefficients[6,1])-(1.96*c(HV_accuracy$coefficients[3,2], LV_accuracy$coefficients[3,2],interaction_accuracy$coefficients[6,2]))),3)
+accuracy_Go_remembered_CI_max=round(exp(c(HV_accuracy$coefficients[3,1], LV_accuracy$coefficients[3,1],interaction_accuracy$coefficients[6,1])+(1.96*c(HV_accuracy$coefficients[3,2], LV_accuracy$coefficients[3,2],interaction_accuracy$coefficients[6,2]))),3)
+accuracy_Go_remembered_one_sided_p=round(c(HV_accuracy$coefficients[3,4], LV_accuracy$coefficients[3,4],interaction_accuracy$coefficients[6,4])/2,3)
+df_results$accuracy_Go_remembered_P=accuracy_Go_remembered_one_sided_p
+df_results$accuracy_Go_remembered_odds_ratio=accuracy_Go_remembered_odds_ratio
+df_results$accuracy_Go_remembered_CI = paste(accuracy_Go_remembered_CI_min, '-',accuracy_Go_remembered_CI_max,sep="")
+# accuracy Go forgotten NoGo remembered
+accuracy_Go_forgotten_estimate=c(HV_accuracy$coefficients[2,1], LV_accuracy$coefficients[2,1],interaction_accuracy$coefficients[5,1])
+accuracy_Go_forgotten_odds_ratio=round(exp(accuracy_Go_forgotten_estimate),3)
+accuracy_Go_forgotten_CI_min=round(exp(c(HV_accuracy$coefficients[2,1], LV_accuracy$coefficients[2,1],interaction_accuracy$coefficients[5,1])-(1.96*c(HV_accuracy$coefficients[2,2], LV_accuracy$coefficients[2,2],interaction_accuracy$coefficients[5,2]))),3)
+accuracy_Go_forgotten_CI_max=round(exp(c(HV_accuracy$coefficients[2,1], LV_accuracy$coefficients[2,1],interaction_accuracy$coefficients[5,1])+(1.96*c(HV_accuracy$coefficients[2,2], LV_accuracy$coefficients[2,2],interaction_accuracy$coefficients[5,2]))),3)
+accuracy_Go_forgotten_one_sided_p=round(c(HV_accuracy$coefficients[2,4], LV_accuracy$coefficients[2,4],interaction_accuracy$coefficients[5,4])/2,3)
+df_results$accuracy_Go_forgotten_P=accuracy_Go_forgotten_one_sided_p
+df_results$accuracy_Go_forgotten_odds_ratio=accuracy_Go_forgotten_odds_ratio
+df_results$accuracy_Go_forgotten_CI = paste(accuracy_Go_forgotten_CI_min, '-',accuracy_Go_forgotten_CI_max,sep="")
+
 # RT
 RT_NoGo_minus_Go_estimate=c(HV_RT$coefficients[2,1], LV_RT$coefficients[2,1],interaction_RT$coefficients[4,1])
 RT_NoGo_minus_Go_odds_ratio=round(exp(RT_NoGo_minus_Go_estimate),3)
@@ -95,98 +113,91 @@ df_results$RT_NoGo_minus_Go_P=RT_NoGo_minus_Go_one_sided_p
 df_results$RT_NoGo_minus_Go_odds_ratio=RT_NoGo_minus_Go_odds_ratio
 df_results$RT_NoGo_minus_Go_CI = paste(RT_NoGo_minus_Go_CI_min, '-',RT_NoGo_minus_Go_CI_max,sep="")
 
+# check direction of effects. If direction is against predictions, adjust p value (1-pval)
+df_results_with_direction = df_results
+df_results_with_direction$accuracy_Go_remembered_pred_direction[df_results_with_direction$accuracy_Go_remembered_odds_ratio>1 & df_results_with_direction$value_level %in% c("HV", "LV")]=1
+df_results_with_direction$accuracy_Go_remembered_pred_direction[df_results_with_direction$accuracy_Go_remembered_odds_ratio<1 & df_results_with_direction$value_level %in% c("HV", "LV")]=0
+df_results_with_direction$accuracy_Go_forgotten_pred_direction[df_results_with_direction$accuracy_Go_forgotten_odds_ratio<1 & df_results_with_direction$value_level %in% c("HV", "LV")]=1
+df_results_with_direction$accuracy_Go_forgotten_pred_direction[df_results_with_direction$accuracy_Go_forgotten_odds_ratio>1 & df_results_with_direction$value_level %in% c("HV", "LV")]=0
+df_results_with_direction$RT_NoGo_minus_Go_pred_direction[df_results_with_direction$RT_NoGo_minus_Go_odds_ratio>1 & df_results_with_direction$value_level %in% c("HV", "LV")]=1
+df_results_with_direction$RT_NoGo_minus_Go_pred_direction[df_results_with_direction$RT_NoGo_minus_Go_odds_ratio<1 & df_results_with_direction$value_level %in% c("HV", "LV")]=0
+
+df_results$accuracy_Go_remembered_P[df_results_with_direction$accuracy_Go_remembered_pred_direction == 0 & df_results_with_direction$value_level %in% c("HV", "LV")] = 1-df_results$accuracy_Go_remembered_P[df_results_with_direction$accuracy_Go_remembered_pred_direction == 0 & df_results_with_direction$value_level %in% c("HV", "LV")]
+df_results$accuracy_Go_forgotten_P[df_results_with_direction$accuracy_Go_forgotten_pred_direction == 0 & df_results_with_direction$value_level %in% c("HV", "LV")] = 1-df_results$accuracy_Go_forgotten_P[df_results_with_direction$accuracy_Go_forgotten_pred_direction == 0 & df_results_with_direction$value_level %in% c("HV", "LV")]
+df_results$RT_NoGo_minus_Go_P[df_results_with_direction$RT_NoGo_minus_Go_pred_direction == 0 & df_results_with_direction$value_level %in% c("HV", "LV")] = 1-df_results$RT_NoGo_minus_Go_P[df_results_with_direction$RT_NoGo_minus_Go_pred_direction == 0 & df_results_with_direction$value_level %in% c("HV", "LV")]
+
+
 print(df_results)
 
 # visualization
 # combinations between go and nogo accuracy - both together
 # means
-mean_props_combined=c(mean(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==probe_data$Accuracy_old_nogoItem & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV both remembered or both forgotten
-                      mean(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==1 & probe_data$Accuracy_old_nogoItem==0 & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV Go remembered NoGo forgotten
-                      mean(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==0 & probe_data$Accuracy_old_nogoItem==1 & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV Go forgotten NoGo remembered
-                      mean(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==probe_data$Accuracy_old_nogoItem & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # LV both remembered or both forgotten
-                      mean(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==1 & probe_data$Accuracy_old_nogoItem==0 & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # LV Go remembered NoGo forgotten
-                      mean(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==0 & probe_data$Accuracy_old_nogoItem==1 & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T)) # LV Go forgotten NoGo remembered
+mean_props_combined=c(mean(with(data=subset(probe_data,probe_data$accuracy_category=="Both remembered / forgotten" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV both remembered or both forgotten
+                      mean(with(data=subset(probe_data,probe_data$accuracy_category=="Go remembered, NoGo forgotten" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV Go remembered NoGo forgotten
+                      mean(with(data=subset(probe_data,probe_data$accuracy_category=="Go forgotten, NoGo remembered" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV Go forgotten NoGo remembered
+                      mean(with(data=subset(probe_data,probe_data$accuracy_category=="Both remembered / forgotten" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # LV both remembered or both forgotten
+                      mean(with(data=subset(probe_data,probe_data$accuracy_category=="Go remembered, NoGo forgotten" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # LV Go remembered NoGo forgotten
+                      mean(with(data=subset(probe_data,probe_data$accuracy_category=="Go forgotten, NoGo remembered" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T)) # LV Go forgotten NoGo remembered
 
 # SD values
-SD_props_combined=c(sd(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==probe_data$Accuracy_old_nogoItem & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV both remembered or both forgotten
-                    sd(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==1 & probe_data$Accuracy_old_nogoItem==0 & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV Go remembered NoGo forgotten
-                    sd(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==0 & probe_data$Accuracy_old_nogoItem==1 & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV Go forgotten NoGo remembered
-                    sd(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==probe_data$Accuracy_old_nogoItem & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # LV both remembered or both forgotten
-                    sd(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==1 & probe_data$Accuracy_old_nogoItem==0 & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # LV Go remembered NoGo forgotten
-                    sd(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==0 & probe_data$Accuracy_old_nogoItem==1 & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T)) # LV Go forgotten NoGo remembered
+SD_props_combined=c(sd(with(data=subset(probe_data,probe_data$accuracy_category=="Both remembered / forgotten" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV both remembered or both forgotten
+                    sd(with(data=subset(probe_data,probe_data$accuracy_category=="Go remembered, NoGo forgotten" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV Go remembered NoGo forgotten
+                    sd(with(data=subset(probe_data,probe_data$accuracy_category=="Go forgotten, NoGo remembered" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # HV Go forgotten NoGo remembered
+                    sd(with(data=subset(probe_data,probe_data$accuracy_category=="Both remembered / forgotten" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # LV both remembered or both forgotten
+                    sd(with(data=subset(probe_data,probe_data$accuracy_category=="Go remembered, NoGo forgotten" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T), # LV Go remembered NoGo forgotten
+                    sd(with(data=subset(probe_data,probe_data$accuracy_category=="Go forgotten, NoGo remembered" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)), na.rm=T)) # LV Go forgotten NoGo remembered
 
 # SE values
 se = function(x) { out=sqrt(var(x, na.rm = TRUE)/length(which(!is.na(x)))) }
-SE_props_combined=c(se(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==probe_data$Accuracy_old_nogoItem & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # HV both remembered or both forgotten
-                    se(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==1 & probe_data$Accuracy_old_nogoItem==0 & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # HV Go remembered NoGo forgotten
-                    se(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==0 & probe_data$Accuracy_old_nogoItem==1 & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # HV Go forgotten NoGo remembered
-                    se(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==probe_data$Accuracy_old_nogoItem & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # LV both remembered or both forgotten
-                    se(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==1 & probe_data$Accuracy_old_nogoItem==0 & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # LV Go remembered NoGo forgotten
-                    se(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==0 & probe_data$Accuracy_old_nogoItem==1 & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)))) # LV Go forgotten NoGo remembered
+SE_props_combined=c(se(with(data=subset(probe_data,probe_data$accuracy_category=="Both remembered / forgotten" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # HV both remembered or both forgotten
+                    se(with(data=subset(probe_data,probe_data$accuracy_category=="Go remembered, NoGo forgotten" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # HV Go remembered NoGo forgotten
+                    se(with(data=subset(probe_data,probe_data$accuracy_category=="Go forgotten, NoGo remembered" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # HV Go forgotten NoGo remembered
+                    se(with(data=subset(probe_data,probe_data$accuracy_category=="Both remembered / forgotten" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # LV both remembered or both forgotten
+                    se(with(data=subset(probe_data,probe_data$accuracy_category=="Go remembered, NoGo forgotten" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T))), # LV Go remembered NoGo forgotten
+                    se(with(data=subset(probe_data,probe_data$accuracy_category=="Go forgotten, NoGo remembered" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, mean, na.rm=T)))) # LV Go forgotten NoGo remembered
 
-num_relevant_trials_combined = c(sum(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==probe_data$Accuracy_old_nogoItem & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # HV both remembered or both forgotten
-                                 sum(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==1 & probe_data$Accuracy_old_nogoItem==0 & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # HV Go remembered NoGo forgotten
-                                 sum(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==0 & probe_data$Accuracy_old_nogoItem==1 & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # HV Go forgotten NoGo remembered
-                                 sum(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==probe_data$Accuracy_old_nogoItem & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # LV both remembered or both forgotten
-                                 sum(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==1 & probe_data$Accuracy_old_nogoItem==0 & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # LV Go remembered NoGo forgotten
-                                 sum(with(data=subset(probe_data,probe_data$Accuracy_old_goItem==0 & probe_data$Accuracy_old_nogoItem==1 & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T)) # LV Go forgotten NoGo remembered
+num_relevant_trials_combined = c(sum(with(data=subset(probe_data,probe_data$accuracy_category=="Both remembered / forgotten" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # HV both remembered or both forgotten
+                                 sum(with(data=subset(probe_data,probe_data$accuracy_category=="Go remembered, NoGo forgotten" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # HV Go remembered NoGo forgotten
+                                 sum(with(data=subset(probe_data,probe_data$accuracy_category=="Go forgotten, NoGo remembered" & probe_data$PairType==1 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # HV Go forgotten NoGo remembered
+                                 sum(with(data=subset(probe_data,probe_data$accuracy_category=="Both remembered / forgotten" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # LV both remembered or both forgotten
+                                 sum(with(data=subset(probe_data,probe_data$accuracy_category=="Go remembered, NoGo forgotten" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T), # LV Go remembered NoGo forgotten
+                                 sum(with(data=subset(probe_data,probe_data$accuracy_category=="Go forgotten, NoGo remembered" & probe_data$PairType==2 & !is.na(probe_data$Outcome)), tapply(Outcome, subjectID, length)), na.rm=T)) # LV Go forgotten NoGo remembered
 
 # put values in data frame for plot
-df_accuracy_regressors_combined=data.frame(row.names = 1:6)
-df_accuracy_regressors_combined$value_level[1:3] = "High value"
-df_accuracy_regressors_combined$value_level[4:6] = "Low value"
-df_accuracy_regressors_combined$accuracy_Go = df_accuracy_regressors_combined$accuracy_NoGo = factor(c("Both", "Remembered", "Forgotten"), levels = c("Remembered", "Forgotten", "Both"))
-df_accuracy_regressors_combined$accuracy_NoGo = factor(c("Both", "Forgotten", "Remembered"), levels = c("Remembered", "Forgotten", "Both"))
-df_accuracy_regressors_combined$means = mean_props_combined*100
-df_accuracy_regressors_combined$SEs = SE_props_combined*100
-df_accuracy_regressors_combined$SDs = SD_props_combined*100
-df_accuracy_regressors_combined$category = factor(c("Both remembered / forgotten", "Go remembered, NoGo forgotten", "Go forgotten, NoGo remembered"), levels = c("Go remembered, NoGo forgotten", "Both remembered / forgotten", "Go forgotten, NoGo remembered"))
-df_accuracy_regressors_combined$considered_trials = num_relevant_trials_combined
+df_accuracy=data.frame(row.names = 1:6)
+df_accuracy$value_level[1:3] = "High-value"
+df_accuracy$value_level[4:6] = "Low-value"
+df_accuracy$means = mean_props_combined*100
+df_accuracy$SEs = SE_props_combined*100
+df_accuracy$SDs = SD_props_combined*100
+df_accuracy$category = factor(c("Both remembered / forgotten", "Go remembered, NoGo forgotten", "Go forgotten, NoGo remembered"), levels = c("Go remembered, NoGo forgotten", "Both remembered / forgotten", "Go forgotten, NoGo remembered"))
+df_accuracy$considered_trials = num_relevant_trials_combined
 
-# plot accuracy Go & NoGo
-plot_accuracy_regressors_combined= ggplot(data=df_accuracy_regressors_combined, aes(x=value_level, y=means, fill=category)) +
+df_accuracy$pval = NA
+df_accuracy$pval[df_accuracy$category=="Go remembered, NoGo forgotten" & df_accuracy$value_level=="High-value"] = df_results$accuracy_Go_remembered_P[df_results$value_level=="HV"]
+df_accuracy$pval[df_accuracy$category=="Go remembered, NoGo forgotten" & df_accuracy$value_level=="Low-value"] = df_results$accuracy_Go_remembered_P[df_results$value_level=="LV"]
+df_accuracy$pval[df_accuracy$category=="Go forgotten, NoGo remembered" & df_accuracy$value_level=="High-value"] = df_results$accuracy_Go_forgotten_P[df_results$value_level=="HV"]
+df_accuracy$pval[df_accuracy$category=="Go forgotten, NoGo remembered" & df_accuracy$value_level=="Low-value"] = df_results$accuracy_Go_forgotten_P[df_results$value_level=="LV"]
+df_accuracy$asterisk=""
+df_accuracy$asterisk[df_accuracy$pval<0.07]="+"
+df_accuracy$asterisk[df_accuracy$pval<0.05]="*"
+df_accuracy$asterisk[df_accuracy$pval<0.01]="**"
+df_accuracy$asterisk[df_accuracy$pval<0.001]="***"
+
+plot_accuracy= ggplot(data=df_accuracy, aes(x=value_level, y=means, fill=category)) +
   geom_bar(stat="identity", position=position_dodge(0.7), width=0.7) +
   theme_bw() + # white background
   theme(axis.title.x=element_blank(),axis.line = element_line(colour = "black"), panel.border = element_blank(), panel.background = element_blank()) + # axis and background formating
-  theme(aspect.ratio=1.2, text = element_text(size=24)) + # font size
+  theme(aspect.ratio=1.2, text = element_text(size=32)) + # font size
   theme(legend.position="bottom", legend.direction = "vertical", legend.title=element_blank()) + # position legend
-  geom_text(aes(label = paste(considered_trials), y=8), size=6, position = position_dodge(0.7), angle = 90) +
+  geom_text(aes(label = paste(considered_trials), y=8), size=12, position = position_dodge(0.7), angle = 90) +
+  geom_text(aes(label = paste(asterisk), y = means + 8), size=12, position = position_dodge(0.7)) +
   geom_errorbar(aes(ymin=means-SEs, ymax=means+SEs), width=1/4, position=position_dodge(0.7)) +
   scale_y_continuous("Mean proportion of Go item choices", expand = c(0,0), limit=c(0,100), breaks=seq(0,100,5)) + # define y axis properties
-  scale_fill_manual(values=c("Go remembered, NoGo forgotten"="#585858","Both remembered / forgotten"="#909090", "Go forgotten, NoGo remembered"="#DCDCDC")) # color of bars
-
-# add significance asteriks
-df_accuracy_significance = data.frame(row.names = 1:3)
-df_accuracy_significance$pvals = c(HV_accuracy_joint$`Pr(>Chisq)`[2]/2, LV_accuracy_joint$`Pr(>Chisq)`[2]/2, interaction_accuracy_joint$`Pr(>Chisq)`[2]/2) # HV, LV, interaction
-df_accuracy_significance$asteriks=""
-df_accuracy_significance$asteriks[df_accuracy_significance$pvals<0.07]="+"
-df_accuracy_significance$asteriks[df_accuracy_significance$pvals<0.05]="*"
-df_accuracy_significance$asteriks[df_accuracy_significance$pvals<0.01]="**"
-df_accuracy_significance$asteriks[df_accuracy_significance$pvals<0.001]="***"
-Lines_hight=80
-
-# add significance for HV and LV
-for (i in 1:3){
-  if (df_accuracy_significance$asteriks[i]!="") {
-    if (i==3){ # interaction
-      Lines_hight = Lines_hight + 7
-      tmp_df=data.frame(x_val=c(1,1,2,2),y_val=c(Lines_hight,Lines_hight+1,Lines_hight+1,Lines_hight)) # define shape of an open rectangle above the bar
-      tmp_df$category=factor(NA, levels = c("Go remembered, NoGo forgotten", "Both remembered / forgotten", "Go forgotten, NoGo remembered"))
-      plot_accuracy_regressors_combined = plot_accuracy_regressors_combined +
-        geom_line(data = tmp_df, aes(x=x_val,y = y_val)) + # draw open rectangle
-        annotate("text", x = 1.5, y = Lines_hight+1, label = (df_accuracy_significance$asteriks[i]),size=14) # differential effect significance asteriks
-    } else{
-      tmp_df=data.frame(x_val=c(i-0.25,i-0.25,i+0.25,i+0.25),y_val=c(Lines_hight,Lines_hight+1,Lines_hight+1,Lines_hight)) # define shape of an open rectangle above the bar
-      tmp_df$category=factor(NA,levels = c("Go remembered, NoGo forgotten", "Both remembered / forgotten", "Go forgotten, NoGo remembered"))
-      plot_accuracy_regressors_combined = plot_accuracy_regressors_combined +
-        geom_line(data = tmp_df, aes(x=x_val,y = y_val)) + # draw open rectangle
-        annotate("text", x = i, y = Lines_hight+1, label = (df_accuracy_significance$asteriks[i]),size=14) # differential effect significance asteriks
-    }
-  }
-}
+  scale_fill_manual(limits = c("Go remembered, NoGo forgotten", "Both remembered / forgotten", "Go forgotten, NoGo remembered"), values=c("#585858","#909090","#DCDCDC")) # color of bars
 
 # show the plot
-print(plot_accuracy_regressors_combined)
+print(plot_accuracy)
 
 # plot RT
 RT_data_agg=as.data.frame(aggregate(probe_only_remembered_items,by=list(probe_only_remembered_items$subjectID_num, probe_only_remembered_items$PairType, probe_only_remembered_items$Outcome), mean, na.rm=TRUE))
@@ -201,49 +212,43 @@ df_RT_for_plot$item_type=c("Go chosen", "NoGo chosen", "Go chosen", "NoGo chosen
 df_RT_for_plot$means = c(RT_means_for_plot[1,2], RT_means_for_plot[1,1], RT_means_for_plot[2,2], RT_means_for_plot[2,1])
 df_RT_for_plot$SEs = c(RT_SEs_for_plot[1,2], RT_SEs_for_plot[1,1], RT_SEs_for_plot[2,2], RT_SEs_for_plot[2,1])
 
+df_RT_for_plot$pval = NA
+df_RT_for_plot$pval[df_RT_for_plot$value_level=="High-value" & df_RT_for_plot$item_type == "Go chosen"] = df_results$RT_NoGo_minus_Go_P[df_results$value_level=="HV"]
+df_RT_for_plot$pval[df_RT_for_plot$value_level=="Low-value" & df_RT_for_plot$item_type == "Go chosen"] = df_results$RT_NoGo_minus_Go_P[df_results$value_level=="LV"]
+df_RT_for_plot$asterisk=""
+df_RT_for_plot$asterisk[df_RT_for_plot$pval<0.07]="+"
+df_RT_for_plot$asterisk[df_RT_for_plot$pval<0.05]="*"
+df_RT_for_plot$asterisk[df_RT_for_plot$pval<0.01]="**"
+df_RT_for_plot$asterisk[df_RT_for_plot$pval<0.001]="***"
+
 # plot RT-choices
 plot_RT= ggplot(data=df_RT_for_plot, aes(x=value_level, y=means, fill=item_type)) +
   geom_bar(stat="identity", position=position_dodge(0.7), width=0.7) +
+  geom_text(aes(label = paste(asterisk), y = means + 0.08), size=12) +
   theme_bw() + # white background
   theme(legend.position="bottom",legend.title=element_blank()) + # position legend
   theme(axis.title.x=element_blank(),axis.line = element_line(colour = "black"), panel.border = element_blank(), panel.background = element_blank()) + # axis and background formating
-  theme(aspect.ratio=1.2, text = element_text(size=24)) + # font size
+  theme(aspect.ratio=1.2, text = element_text(size=32)) + # font size
   geom_errorbar(aes(ymin=means-SEs, ymax=means+SEs), width=1/4, position=position_dodge(0.7)) +
   scale_y_continuous(expression(paste(Delta, "RT (NoGo recognition RT - Go recognition RT)")), expand = c(0,0), limit=c(-0.1,0.28), breaks=seq(-0.1,0.28,0.02)) + # define y axis properties
   scale_fill_manual(values=c("#585858","#DCDCDC")) + # color of bars
   geom_abline(intercept = 0,slope=0,linetype =2, size = 1,aes()) # add line for y=0
 
-# add significance asteriks
-df_RT_significance = data.frame(row.names = 1:3)
-df_RT_significance$pvals = c(HV_RT$coefficients[2, "Pr(>|z|)"]/2, LV_RT$coefficients[2, "Pr(>|z|)"]/2, interaction_RT$coefficients[4,"Pr(>|z|)"]/2) # HV, LV, interaction
-df_RT_significance$estimates = c(HV_RT$coefficients[2, "Estimate"], LV_RT$coefficients[2, "Estimate"], interaction_RT$coefficients[4,"Estimate"]) # HV, LV, interaction)
-df_RT_significance$asteriks=""
-df_RT_significance$asteriks[df_RT_significance$pvals<0.07 & df_RT_significance$estimates>0]="+"
-df_RT_significance$asteriks[df_RT_significance$pvals<0.05 & df_RT_significance$estimates>0]="*"
-df_RT_significance$asteriks[df_RT_significance$pvals<0.01 & df_RT_significance$estimates>0]="**"
-df_RT_significance$asteriks[df_RT_significance$pvals<0.001 & df_RT_significance$estimates>0]="***"
-Lines_hight=0.22
-
-# add significance for HV and LV
-for (i in 1:3){
-  if (df_RT_significance$asteriks[i]!="") {
-    if (i==3){ # interaction
-      Lines_hight = Lines_hight + 0.025
-      tmp_df=data.frame(x_val=c(i/2-1/2,i/2-1/2,i/2+1/2,i/2+1/2),y_val=c(Lines_hight,Lines_hight+0.01,Lines_hight+0.01,Lines_hight)) # define shape of an open rectangle above the bar
-      tmp_df$item_type=NA
-      plot_RT = plot_RT +
-        geom_line(data = tmp_df, aes(x=x_val,y = y_val)) + # draw open rectangle
-        annotate("text", x = i/2, y = Lines_hight+0.01, label = (df_RT_significance$asteriks[i]),size=14) # differential effect significance asteriks
-    } else{
-      tmp_df=data.frame(x_val=c(i-0.7/4,i-0.7/4,i+0.7/4,i+0.7/4),y_val=c(Lines_hight,Lines_hight+0.01,Lines_hight+0.01,Lines_hight)) # define shape of an open rectangle above the bar
-      tmp_df$item_type=NA
-      plot_RT = plot_RT +
-        geom_line(data = tmp_df, aes(x=x_val,y = y_val)) + # draw open rectangle
-        annotate("text", x = i, y = Lines_hight+0.01, label = (df_RT_significance$asteriks[i]),size=14) # differential effect significance asteriks
-      
-      }
-  }
-}
-
 # show the plot
 print(plot_RT)
+
+# correlations across participants
+probe_HV_go_choices_by_participant=with(data=subset(probe_data,PairType==1), tapply(Outcome, subjectID, mean, na.rm=T))
+probe_LV_go_choices_by_participant=with(data=subset(probe_data,PairType==2), tapply(Outcome, subjectID, mean, na.rm=T))
+accuracy_HV_go_by_participant=with(data=subset(recognition_probe_items,isGo.==1 & IsHighValue==1), tapply(IsCorrectAnsOld, subjectID, mean, na.rm=T))
+accuracy_HV_nogo_by_participant=with(data=subset(recognition_probe_items,isGo.==0 & IsHighValue==1), tapply(IsCorrectAnsOld, subjectID, mean, na.rm=T))
+accuracy_HV_go_minus_nogo_by_participant = accuracy_HV_go_by_participant - accuracy_HV_nogo_by_participant
+RT_HV_go_by_participant=with(data=subset(recognition_probe_items_correct_isOld,isGo.==1 & IsHighValue==1), tapply(RT_isOld, subjectID, mean, na.rm=T))
+RT_HV_nogo_by_participant=with(data=subset(recognition_probe_items_correct_isOld,isGo.==0 & IsHighValue==1), tapply(RT_isOld, subjectID, mean, na.rm=T))
+RT_HV_nogo_minus_go_by_participant = RT_HV_nogo_by_participant - RT_HV_go_by_participant
+
+# pearson correlations for HV items:
+print('Linear correlation between choices and accuracy difference (Go minus NoGo), for high-value items:')
+cor.test(probe_HV_go_choices_by_participant, accuracy_HV_go_minus_nogo_by_participant)
+print('Linear correlation between choices and RT difference (NoGo minus Go), for high-value items:')
+cor.test(probe_HV_go_choices_by_participant, RT_HV_nogo_minus_go_by_participant)

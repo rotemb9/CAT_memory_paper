@@ -13,7 +13,7 @@ input_file_path="DEFINE PATH OF DATA HERE"
 experiment_name = "bmem_snacks2"
 
 # define session (options: 2 or 3 or 2:3)
-sessions = 3 # 2 / 3 / 2:3
+sessions = 2 # 2 / 3 / 2:3
 
 # load data
 input_filename=paste(input_file_path, experiment_name, "_recognition_all_sessions.Rdata",sep="")  
@@ -162,20 +162,27 @@ for (session_num in sessions){
   print(descriptive_results_accuracy)
   
   # Logistic regression analysis
-  accuracy_isold_results_all_items=summary(glmer(IsCorrectAnsOld ~ 1 + isGo.+IsHighValue + (1|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
-  accuracy_isold_results_all_items_with_interaction=summary(glmer(IsCorrectAnsOld ~ 1 + isGo.*IsHighValue + (1|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
-  accuracy_isold_results_HV_items=summary(glmer(IsCorrectAnsOld ~ 1 + isGo. + (1|subjectID),data=subset(recognition_probe_items,(recognition_probe_items$IsHighValue)),na.action=na.omit,family=binomial))
-  accuracy_isold_results_LV_items=summary(glmer(IsCorrectAnsOld ~ 1 + isGo. + (1|subjectID),data=subset(recognition_probe_items,(!recognition_probe_items$IsHighValue)),na.action=na.omit,family=binomial))
-  
-  # organize statistics in table
-  results_isold_accuracy=rbind(accuracy_isold_results_all_items$coefficients[2,],accuracy_isold_results_all_items$coefficients[3,],accuracy_isold_results_all_items_with_interaction$coefficients[4,],accuracy_isold_results_HV_items$coefficients[2,],accuracy_isold_results_LV_items$coefficients[2,])
+  recognition_probe_items$go.ind = 1*recognition_probe_items$isGo.
+  recognition_probe_items$high.ind = 1*recognition_probe_items$IsHighValue
+  if (session_num == 2) { 
+    accuracy_isold_results_all_items=summary(glmer(IsCorrectAnsOld ~ 1 + isGo.+IsHighValue + (-1 + go.ind + high.ind|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
+    accuracy_isold_results_all_items_with_interaction=summary(glmer(IsCorrectAnsOld ~ 1 + isGo.*IsHighValue + (-1 + go.ind + high.ind|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
+    }
+  if (session_num == 3) { 
+    accuracy_isold_results_all_items=summary(glmer(IsCorrectAnsOld ~ 1 + isGo.+IsHighValue + (1 + go.ind + high.ind||subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
+    accuracy_isold_results_all_items_with_interaction=summary(glmer(IsCorrectAnsOld ~ 1 + isGo.*IsHighValue + (1 + go.ind + high.ind||subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
+    }
+
+   # organize statistics in table
+  results_isold_accuracy=rbind(accuracy_isold_results_all_items$coefficients[2,],accuracy_isold_results_all_items$coefficients[3,],accuracy_isold_results_all_items_with_interaction$coefficients[4,])
   results_isold_accuracy=as.data.frame(results_isold_accuracy)
   colnames(results_isold_accuracy)[4] = "two-sided p"
   results_isold_accuracy$odds_ratio=round(exp(results_isold_accuracy$Estimate),3)
   CI_min=exp(results_isold_accuracy$Estimate-1.96*results_isold_accuracy$`Std. Error`)
   CI_max=exp(results_isold_accuracy$Estimate+1.96*results_isold_accuracy$`Std. Error`)
   results_isold_accuracy$CI=paste(round(CI_min,3)," - ", round(CI_max,3), sep="")
-  results_isold_accuracy$category=c('all Go vs. NoGo', 'all HV vs. LV', 'all interaction Go/NoGo and HV/LV', 'HV Go vs. NoGo', 'LV Go vs. NoGo')
+  results_isold_accuracy$category=c('all Go vs. NoGo', 'all HV vs. LV', 'all interaction Go/NoGo and HV/LV')
+  results_isold_accuracy$one_sided_p=results_isold_accuracy$`two-sided p`/2
   
   print(results_isold_accuracy)
   
@@ -195,7 +202,7 @@ for (session_num in sessions){
   plot_accuracy= ggplot(data=df_accuracy, aes(x=item_type, y=means, fill=value_level)) +
     geom_bar(stat="identity", position=position_dodge(), width=0.8) +
     theme_bw() + # white background
-    theme(legend.position="top",legend.title=element_blank()) + # position legend
+    theme(legend.position="none",legend.title=element_blank()) + # position legend
     theme(axis.title.x=element_blank(),axis.line = element_line(colour = "black"), panel.border = element_blank(), panel.background = element_blank()) + # axis and background formating
     theme(aspect.ratio=1.2, text = element_text(size=24)) + # font size
     geom_errorbar(aes(ymin=means-se, ymax=means+se), width=1/6, position=position_dodge(0.8)) +
@@ -300,16 +307,24 @@ for (session_num in sessions){
   
   
   # linear mixed model analysis
-  RT_isold_results_all_items=summary(lmer(RT_isOld ~ isGo.+IsHighValue + (1|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit))
-  RT_isold_results_all_items_with_interaction=summary(lmer(RT_isOld ~ isGo.*IsHighValue + (1|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit))
-  RT_isold_results_HV_items=summary(lmer(RT_isOld ~ isGo.+ (1|subjectID),data=subset(recognition_probe_items_correct_isOld,(recognition_probe_items_correct_isOld$IsHighValue)),na.action=na.omit)) 
-  RT_isold_results_LV_items=summary(lmer(RT_isOld ~ isGo.+ (1|subjectID),data=subset(recognition_probe_items_correct_isOld,(!recognition_probe_items_correct_isOld$IsHighValue)),na.action=na.omit)) 
-  
+  #RT_isold_results_all_items=summary(lmer(RT_isOld ~ isGo.+IsHighValue + (1|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit))
+  if (session_num == 2) {
+    RT_isold_results_all_items=summary(lmer(RT_isOld ~ isGo.+IsHighValue + (1+go.ind+high.ind||subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit))
+    RT_isold_results_all_items_with_interaction=summary(lmer(RT_isOld ~ isGo.*IsHighValue + (1+go.ind+high.ind||subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit))
+  }
+  if (session_num == 3) {
+    RT_isold_results_all_items=summary(lmer(RT_isOld ~ isGo.+IsHighValue + (1+go.ind|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit))
+    RT_isold_results_all_items_with_interaction=summary(lmer(RT_isOld ~ isGo.*IsHighValue + (1+go.ind|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit))
+  }
+   #RT_isold_results_all_items_with_interaction=summary(lmer(RT_isOld ~ isGo.*IsHighValue + (1|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit))
+  #RT_isold_results_HV_items=summary(lmer(RT_isOld ~ isGo.+ (1|subjectID),data=subset(recognition_probe_items_correct_isOld,(recognition_probe_items_correct_isOld$IsHighValue)),na.action=na.omit)) 
+
   # organize statistics in table
-  results_isold_RT=rbind(RT_isold_results_all_items$coefficients[2,],RT_isold_results_all_items$coefficients[3,],RT_isold_results_all_items_with_interaction$coefficients[4,],RT_isold_results_HV_items$coefficients[2,],RT_isold_results_LV_items$coefficients[2,])
+  results_isold_RT=rbind(RT_isold_results_all_items$coefficients[2,],RT_isold_results_all_items$coefficients[3,],RT_isold_results_all_items_with_interaction$coefficients[4,])
   results_isold_RT=as.data.frame(results_isold_RT)
   colnames(results_isold_RT)[5] = "two-sided p"
-  results_isold_RT$category=c('all Go vs. NoGo', 'all HV vs. LV', 'all interaction Go/NoGo and HV/LV', 'HV Go vs. NoGo', 'LV Go vs. NoGo')
+  results_isold_RT$category=c('all Go vs. NoGo', 'all HV vs. LV', 'all interaction Go/NoGo and HV/LV')
+  results_isold_RT$one_sided_p=results_isold_RT$`two-sided p`/2
   
   print(results_isold_RT)
   
@@ -324,7 +339,7 @@ for (session_num in sessions){
   plot_RT= ggplot(data=df_RT, aes(x=item_type, y=means, fill=value_level)) +
     geom_bar(stat="identity", position=position_dodge(), width=0.8) +
     theme_bw() + # white background
-    theme(legend.position="top",legend.title=element_blank()) + # position legend
+    theme(legend.position="none",legend.title=element_blank()) + # position legend
     theme(axis.title.x=element_blank(),axis.line = element_line(colour = "black"), panel.border = element_blank(), panel.background = element_blank()) + # axis and background formating
     theme(aspect.ratio=1.2, text = element_text(size=24)) + # font size
     geom_errorbar(aes(ymin=means-se, ymax=means+se), width=1/6, position=position_dodge(0.8)) +

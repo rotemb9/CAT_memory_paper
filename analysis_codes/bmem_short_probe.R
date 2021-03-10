@@ -77,7 +77,6 @@ Results_df_go_nogo$asteriks_loc[Results_df_go_nogo$asteriks=="+"] = asteriks_bas
 plot_proportions=ggplot(data=Results_df_go_nogo, aes(x=category, y=means, fill=category)) +
   geom_bar(width=0.7,colour="black",position=position_dodge(0.7), stat="identity") + # Bar plot
   theme_bw() + # white background
-  #theme(legend.position="top",legend.title=element_blank()) + # position legend
   theme(legend.position="none") + # remove legend
   theme(axis.title.x=element_blank(),axis.line = element_line(colour = "black"), panel.border = element_blank(), panel.background = element_blank()) + # axis and background formating
   theme(aspect.ratio=2,text = element_text(size=18)) + # aspect ratio and font size

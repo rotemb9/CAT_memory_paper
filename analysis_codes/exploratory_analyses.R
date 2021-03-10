@@ -5,12 +5,12 @@ library(lmerTest)
 # Clear workspace
 rm(list=ls())
 
-recognition_data_all_experiments=c()
 # load recognition data for all experiments
 # Define the local path where the data can be found
 # you will need to set the correct path whre the RData file with the data is located
 input_file_path="DEFINE PATH OF DATA HERE"
 
+recognition_data_all_experiments=c()
 experiments_names = c("bmem_snacks", "bmem_snacks2","bmem_short")
 for (exp_ind in 1:length(experiments_names)){
   experiment_name=experiments_names[exp_ind]
@@ -105,6 +105,25 @@ for (exp_ind in 1:length(experiments_names)) {
     
     # confidence level go vs. nogo for correct is old answers (1=high confidence 0=low confidence)
     confidence_analysis=summary(glmer(is_high_confidence_level ~ 1 + isGo.+IsHighValue + (1|subjectID),data=recognition_probe_items_curr_session_correct_isOld,na.action=na.omit,family=binomial)) 
+    recognition_probe_items_curr_session_correct_isOld$go.ind = 1*recognition_probe_items_curr_session_correct_isOld$isGo.
+    recognition_probe_items_curr_session_correct_isOld$high.ind = 1*recognition_probe_items_curr_session_correct_isOld$IsHighValue
+    if (experiment_name == "bmem_snacks" & curr_session == "Session 2") {
+      confidence_analysis=summary(glmer(is_high_confidence_level ~ 1 + isGo.+IsHighValue + (1 + go.ind|subjectID),data=recognition_probe_items_curr_session_correct_isOld,na.action=na.omit,family=binomial)) 
+    }
+    if (experiment_name == "bmem_snacks" & curr_session == "Follow-up") {
+      confidence_analysis=summary(glmer(is_high_confidence_level ~ 1 + isGo.+IsHighValue + (1 + high.ind|subjectID),data=recognition_probe_items_curr_session_correct_isOld,na.action=na.omit,family=binomial)) 
+    }
+    
+    if (experiment_name == "bmem_snacks2" & curr_session == "Session 2") {
+      confidence_analysis=summary(glmer(is_high_confidence_level ~ 1 + isGo.+IsHighValue + (1 + go.ind |subjectID),data=recognition_probe_items_curr_session_correct_isOld,na.action=na.omit,family=binomial)) 
+    }  
+    
+    if (experiment_name == "bmem_snacks2" & curr_session == "Follow-up") {
+      confidence_analysis=summary(glmer(is_high_confidence_level ~ 1 + isGo.+IsHighValue + (1 + go.ind + high.ind||subjectID),data=recognition_probe_items_curr_session_correct_isOld,na.action=na.omit,family=binomial)) 
+    }     
+    if (experiment_name == "bmem_short" & curr_session == 1) {
+      confidence_analysis=summary(glmer(is_high_confidence_level ~ 1 + isGo.+IsHighValue + (1 + go.ind + high.ind||subjectID),data=recognition_probe_items_curr_session_correct_isOld,na.action=na.omit,family=binomial)) 
+    }      
     recognition_confidence_results$confidence_Go[ind]=paste(round(confidence_go_mean,3)," (", round(confidence_go_sd,3),")",sep="")
     recognition_confidence_results$confidence_NoGo[ind]=paste(round(confidence_nogo_mean,3)," (", round(confidence_nogo_sd,3),")",sep="")
     confidence_CI_min=round(exp(confidence_analysis$coefficients[2,1]-1.96*confidence_analysis$coefficients[2,2]),3)
@@ -120,30 +139,30 @@ print("Confidence level analysis")
 print(recognition_confidence_results)
 
 # Analysis of RT - correct vs. incorrect responses, Go vs. NoGo
-# Only for Experiment 1 and the Pilot Experiment (bmem_sncaks and bmem_snacks2), where the recognition RT effect was found
-recognition_data_exp_1_2=subset(recognition_data,recognition_data$experiment %in% c("bmem_snacks", "bmem_snacks2"))
-recognition_probe_items_exp_1_2 = subset(recognition_probe_items,recognition_probe_items$experiment %in% c("bmem_snacks", "bmem_snacks2"))
+# Only for Experiment 1 (bmem_snacks2), where the recognition RT effect was found
+recognition_data_exp1=subset(recognition_data,recognition_data$experiment %in% c("bmem_snacks2"))
+recognition_probe_items_exp1 = subset(recognition_probe_items,recognition_probe_items$experiment %in% c("bmem_snacks2"))
 
 # RT old/new Go vs. NoGo for hits vs. misses
 # means
-rt_hits_go=mean(with(data=subset(recognition_probe_items_exp_1_2,isGo.==1 & IsCorrectAnsOld==1), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
-rt_hits_nogo=mean(with(data=subset(recognition_probe_items_exp_1_2,isGo.==0 & IsCorrectAnsOld==1), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
-rt_misses_go=mean(with(data=subset(recognition_probe_items_exp_1_2,isGo.==1 & IsCorrectAnsOld==0), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
-rt_misses_nogo=mean(with(data=subset(recognition_probe_items_exp_1_2,isGo.==0 & IsCorrectAnsOld==0), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
+rt_hits_go=mean(with(data=subset(recognition_probe_items_exp1,isGo.==1 & IsCorrectAnsOld==1), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
+rt_hits_nogo=mean(with(data=subset(recognition_probe_items_exp1,isGo.==0 & IsCorrectAnsOld==1), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
+rt_misses_go=mean(with(data=subset(recognition_probe_items_exp1,isGo.==1 & IsCorrectAnsOld==0), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
+rt_misses_nogo=mean(with(data=subset(recognition_probe_items_exp1,isGo.==0 & IsCorrectAnsOld==0), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
 # SDs
-rt_hits_go_sd=sd(with(data=subset(recognition_probe_items_exp_1_2,isGo.==1 & IsCorrectAnsOld==1), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
-rt_hits_nogo_sd=sd(with(data=subset(recognition_probe_items_exp_1_2,isGo.==0 & IsCorrectAnsOld==1), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
-rt_misses_go_sd=sd(with(data=subset(recognition_probe_items_exp_1_2,isGo.==1 & IsCorrectAnsOld==0), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
-rt_misses_nogo_sd=sd(with(data=subset(recognition_probe_items_exp_1_2,isGo.==0 & IsCorrectAnsOld==0), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
+rt_hits_go_sd=sd(with(data=subset(recognition_probe_items_exp1,isGo.==1 & IsCorrectAnsOld==1), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
+rt_hits_nogo_sd=sd(with(data=subset(recognition_probe_items_exp1,isGo.==0 & IsCorrectAnsOld==1), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
+rt_misses_go_sd=sd(with(data=subset(recognition_probe_items_exp1,isGo.==1 & IsCorrectAnsOld==0), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
+rt_misses_nogo_sd=sd(with(data=subset(recognition_probe_items_exp1,isGo.==0 & IsCorrectAnsOld==0), tapply(RT_isOld, subjectID, mean, na.rm=T)),na.rm=T)
 # linear regression
-RT_diff_hits=summary(lmer(RT_isOld ~ isGo. + IsHighValue + (1|subjectID) + (1|experiment),data=subset(recognition_probe_items_exp_1_2,IsCorrectAnsOld==1),na.action=na.omit))
-RT_diff_misses=summary(lmer(RT_isOld ~ isGo. + IsHighValue + (1|subjectID) + (1|experiment),data=subset(recognition_probe_items_exp_1_2,IsCorrectAnsOld==0),na.action=na.omit))
-interaction_RTs=summary(lmer(RT_isOld ~ isGo. * IsCorrectAnsOld + IsHighValue + (1|subjectID) + (1|experiment),data=recognition_probe_items_exp_1_2,na.action=na.omit))
+RT_diff_hits=summary(lmer(RT_isOld ~ isGo. + IsHighValue + (1+isGo.|subjectID),data=subset(recognition_probe_items_exp1,IsCorrectAnsOld==1),na.action=na.omit))
+RT_diff_misses=summary(lmer(RT_isOld ~ isGo. + IsHighValue + (1+isGo.|subjectID),data=subset(recognition_probe_items_exp1,IsCorrectAnsOld==0),na.action=na.omit))
+interaction_RTs=summary(lmer(RT_isOld ~ isGo. * IsCorrectAnsOld + IsHighValue + (1 + isGo.|subjectID),data=recognition_probe_items_exp1,na.action=na.omit))
 # num trials
-num_hits_go_items=length(recognition_probe_items_exp_1_2$RT_isOld[recognition_probe_items_exp_1_2$IsCorrectAnsOld==1 & recognition_probe_items_exp_1_2$isGo.==1])
-num_hits_nogo_items=length(recognition_probe_items_exp_1_2$RT_isOld[recognition_probe_items_exp_1_2$IsCorrectAnsOld==1 & recognition_probe_items_exp_1_2$isGo.==0])
-num_misses_go_items=length(recognition_probe_items_exp_1_2$RT_isOld[recognition_probe_items_exp_1_2$IsCorrectAnsOld==0 & recognition_probe_items_exp_1_2$isGo.==1])
-num_misses_nogo_items=length(recognition_probe_items_exp_1_2$RT_isOld[recognition_probe_items_exp_1_2$IsCorrectAnsOld==0 & recognition_probe_items_exp_1_2$isGo.==0])
+num_hits_go_items=length(recognition_probe_items_exp1$RT_isOld[recognition_probe_items_exp1$IsCorrectAnsOld==1 & recognition_probe_items_exp1$isGo.==1])
+num_hits_nogo_items=length(recognition_probe_items_exp1$RT_isOld[recognition_probe_items_exp1$IsCorrectAnsOld==1 & recognition_probe_items_exp1$isGo.==0])
+num_misses_go_items=length(recognition_probe_items_exp1$RT_isOld[recognition_probe_items_exp1$IsCorrectAnsOld==0 & recognition_probe_items_exp1$isGo.==1])
+num_misses_nogo_items=length(recognition_probe_items_exp1$RT_isOld[recognition_probe_items_exp1$IsCorrectAnsOld==0 & recognition_probe_items_exp1$isGo.==0])
 
 # print results
 print("RT Go vs. NoGo for hits:")
@@ -163,24 +182,24 @@ print(paste("one-sided p = ",round(interaction_RTs$coefficients[5,5]/2,3)))
 # RT go/nogo Go vs. NoGo for hits vs. misses
 print("Go / NoGo recognition task!")
 # means
-rt_gonogo_correct_go=mean(with(data=subset(recognition_probe_items_exp_1_2,isGo.==1 & IsCorrectAnsGo==1), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
-rt_gonogo_correct_nogo=mean(with(data=subset(recognition_probe_items_exp_1_2,isGo.==0 & IsCorrectAnsGo==1), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
-rt_gonogo_incorrect_go=mean(with(data=subset(recognition_probe_items_exp_1_2,isGo.==1 & IsCorrectAnsGo==0), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
-rt_gonogo_incorrect_nogo=mean(with(data=subset(recognition_probe_items_exp_1_2,isGo.==0 & IsCorrectAnsGo==0), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
+rt_gonogo_correct_go=mean(with(data=subset(recognition_probe_items_exp1,isGo.==1 & IsCorrectAnsGo==1), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
+rt_gonogo_correct_nogo=mean(with(data=subset(recognition_probe_items_exp1,isGo.==0 & IsCorrectAnsGo==1), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
+rt_gonogo_incorrect_go=mean(with(data=subset(recognition_probe_items_exp1,isGo.==1 & IsCorrectAnsGo==0), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
+rt_gonogo_incorrect_nogo=mean(with(data=subset(recognition_probe_items_exp1,isGo.==0 & IsCorrectAnsGo==0), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
 # SDs
-rt_gonogo_correct_go_sd=sd(with(data=subset(recognition_probe_items_exp_1_2,isGo.==1 & IsCorrectAnsGo==1), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
-rt_gonogo_correct_nogo_sd=sd(with(data=subset(recognition_probe_items_exp_1_2,isGo.==0 & IsCorrectAnsGo==1), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
-rt_gonogo_incorrect_go_sd=sd(with(data=subset(recognition_probe_items_exp_1_2,isGo.==1 & IsCorrectAnsGo==0), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
-rt_gonogo_incorrect_nogo_sd=sd(with(data=subset(recognition_probe_items_exp_1_2,isGo.==0 & IsCorrectAnsGo==0), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
+rt_gonogo_correct_go_sd=sd(with(data=subset(recognition_probe_items_exp1,isGo.==1 & IsCorrectAnsGo==1), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
+rt_gonogo_correct_nogo_sd=sd(with(data=subset(recognition_probe_items_exp1,isGo.==0 & IsCorrectAnsGo==1), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
+rt_gonogo_incorrect_go_sd=sd(with(data=subset(recognition_probe_items_exp1,isGo.==1 & IsCorrectAnsGo==0), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
+rt_gonogo_incorrect_nogo_sd=sd(with(data=subset(recognition_probe_items_exp1,isGo.==0 & IsCorrectAnsGo==0), tapply(RT_isGo, subjectID, mean, na.rm=T)),na.rm=T)
 # logistic regression
-RT_gonogo_diff_correct=summary(lmer(RT_isGo ~ isGo. + IsHighValue + (1|subjectID) + (1|experiment),data=subset(recognition_probe_items_exp_1_2,IsCorrectAnsGo==1),na.action=na.omit))
-RT_gonogo_diff_incorrect=summary(lmer(RT_isGo ~ isGo. + IsHighValue + (1|subjectID) + (1|experiment),data=subset(recognition_probe_items_exp_1_2,IsCorrectAnsGo==0),na.action=na.omit))
-interaction_RTs_gonogo=summary(lmer(RT_isGo ~ isGo. * IsCorrectAnsGo + IsHighValue + (1|subjectID) + (1|experiment),data=recognition_probe_items_exp_1_2,na.action=na.omit))
+RT_gonogo_diff_correct=summary(lmer(RT_isGo ~ isGo. + IsHighValue + (1+isGo.|subjectID),data=subset(recognition_probe_items_exp1,IsCorrectAnsGo==1),na.action=na.omit))
+RT_gonogo_diff_incorrect=summary(lmer(RT_isGo ~ isGo. + IsHighValue + (1+IsHighValue|subjectID),data=subset(recognition_probe_items_exp1,IsCorrectAnsGo==0),na.action=na.omit))
+interaction_RTs_gonogo=summary(lmer(RT_isGo ~ isGo. * IsCorrectAnsGo + IsHighValue + (1+IsHighValue|subjectID),data=recognition_probe_items_exp1,na.action=na.omit))
 # num trials
-num_correct_go_items_gonogo=length(recognition_probe_items_exp_1_2$RT_isGo[recognition_probe_items_exp_1_2$IsCorrectAnsGo==1 & recognition_probe_items_exp_1_2$isGo.==1])
-num_correct_nogo_items_gonogo=length(recognition_probe_items_exp_1_2$RT_isGo[recognition_probe_items_exp_1_2$IsCorrectAnsGo==1 & recognition_probe_items_exp_1_2$isGo.==0])
-num_incorrect_go_items_gonogo=length(recognition_probe_items_exp_1_2$RT_isGo[recognition_probe_items_exp_1_2$IsCorrectAnsGo==0 & recognition_probe_items_exp_1_2$isGo.==1])
-num_incorrect_nogo_items_gonogo=length(recognition_probe_items_exp_1_2$RT_isGo[recognition_probe_items_exp_1_2$IsCorrectAnsGo==0 & recognition_probe_items_exp_1_2$isGo.==0])
+num_correct_go_items_gonogo=length(recognition_probe_items_exp1$RT_isGo[recognition_probe_items_exp1$IsCorrectAnsGo==1 & recognition_probe_items_exp1$isGo.==1])
+num_correct_nogo_items_gonogo=length(recognition_probe_items_exp1$RT_isGo[recognition_probe_items_exp1$IsCorrectAnsGo==1 & recognition_probe_items_exp1$isGo.==0])
+num_incorrect_go_items_gonogo=length(recognition_probe_items_exp1$RT_isGo[recognition_probe_items_exp1$IsCorrectAnsGo==0 & recognition_probe_items_exp1$isGo.==1])
+num_incorrect_nogo_items_gonogo=length(recognition_probe_items_exp1$RT_isGo[recognition_probe_items_exp1$IsCorrectAnsGo==0 & recognition_probe_items_exp1$isGo.==0])
 
 # print results
 print("RT Go vs. NoGo for correct responses:")

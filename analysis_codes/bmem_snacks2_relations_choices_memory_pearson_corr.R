@@ -15,7 +15,7 @@ experiment_name="bmem_snacks2"
 
 # Define the local path where the data can be found
 # you will need to set the correct path whre the RData file with the data is located
-input_path="/Users/Rotem_NY/Google_Drive/github/CAT_memory_paper/data/"
+input_file_path="DEFINE PATH OF DATA HERE"
 
 # load data
 filename=paste(input_path,experiment_name,"_probe", sessionNum_probe, "_recognition", sessionNum_recognition, ".Rdata",sep="")
@@ -251,14 +251,10 @@ print(plot_RT)
 # correlations across participants
 probe_HV_go_choices_by_participant=with(data=subset(probe_data,PairType==1), tapply(Outcome, subjectID, mean, na.rm=T))
 probe_LV_go_choices_by_participant=with(data=subset(probe_data,PairType==2), tapply(Outcome, subjectID, mean, na.rm=T))
-#accuracy_all_go_by_participant=with(data=subset(recognition_probe_items,isGo.==1), tapply(IsCorrectAnsOld, subjectID, mean, na.rm=T))
 accuracy_HV_go_by_participant=with(data=subset(recognition_probe_items,isGo.==1 & IsHighValue==1), tapply(IsCorrectAnsOld, subjectID, mean, na.rm=T))
-#accuracy_all_nogo_by_participant=with(data=subset(recognition_probe_items,isGo.==0), tapply(IsCorrectAnsOld, subjectID, mean, na.rm=T))
 accuracy_HV_nogo_by_participant=with(data=subset(recognition_probe_items,isGo.==0 & IsHighValue==1), tapply(IsCorrectAnsOld, subjectID, mean, na.rm=T))
 accuracy_HV_go_minus_nogo_by_participant = accuracy_HV_go_by_participant - accuracy_HV_nogo_by_participant
-#RT_all_go_by_participant=with(data=subset(recognition_probe_items_correct_isOld,isGo.==1), tapply(RT_isOld, subjectID, mean, na.rm=T))
 RT_HV_go_by_participant=with(data=subset(recognition_probe_items_correct_isOld,isGo.==1 & IsHighValue==1), tapply(RT_isOld, subjectID, mean, na.rm=T))
-#RT_all_nogo_by_participant=with(data=subset(recognition_probe_items_correct_isOld,isGo.==0), tapply(RT_isOld, subjectID, mean, na.rm=T))
 RT_HV_nogo_by_participant=with(data=subset(recognition_probe_items_correct_isOld,isGo.==0 & IsHighValue==1), tapply(RT_isOld, subjectID, mean, na.rm=T))
 RT_HV_nogo_minus_go_by_participant = RT_HV_nogo_by_participant - RT_HV_go_by_participant
 

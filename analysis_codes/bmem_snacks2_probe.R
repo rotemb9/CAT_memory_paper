@@ -11,7 +11,6 @@ input_file_path="DEFINE PATH OF DATA HERE"
 
 experiment_name = "bmem_snacks2"
 
-# define sessions (options: 2 or 3 or 2:3)
 sessions = 2:3
 
 # load data
@@ -44,7 +43,7 @@ for (session_num in sessions){
   # Logistic regression analysis
   high_value_results=summary(glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data_curr_session,(probe_data_curr_session$PairType2=='High_Value')),na.action=na.omit,family=binomial)) 
   low_value_results=summary(glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data_curr_session,(probe_data_curr_session$PairType2=='Low_Value')),na.action=na.omit,family=binomial))
-  high_low_difference_results=summary(glmer(Outcome ~ 1 + PairType + (1|subjectID),data=subset(probe_data_curr_session,probe_data_curr_session$PairType %in% c(1,2)),na.action=na.omit,family=binomial)) #effect of Go choice for HH vs LL
+  high_low_difference_results=summary(glmer(Outcome ~ 1 + PairType + (1 + PairType|subjectID),data=subset(probe_data_curr_session,probe_data_curr_session$PairType %in% c(1,2)),na.action=na.omit,family=binomial)) #effect of Go choice for HV vs LV
   sanity_high_low_results=summary(glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data_curr_session,(probe_data_curr_session$PairType==3)),na.action=na.omit,family=binomial)) 
   sanity_same_value_results=summary(glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data_curr_session,(probe_data_curr_session$PairType==4 | probe_data_curr_session$PairType==5)),na.action=na.omit,family=binomial)) 
   

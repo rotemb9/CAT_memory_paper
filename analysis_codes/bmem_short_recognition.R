@@ -146,6 +146,7 @@ means_isold_accuracy=c(mean(with(data=subset(recognition_probe_items,isGo.==1), 
   print(descriptive_results_accuracy)
   
   # Logistic regression analysis
+  recognition_probe_items$go.ind = 1*recognition_probe_items$isGo.
   model_accuracy_by_item_type=glmer(IsCorrectAnsOld ~ 1 + isGo.+ (1|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial) 
   model_accuracy_by_item_type_and_value=glmer(IsCorrectAnsOld ~ 1 + isGo.+ PairType + (1|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial) 
   model_accuracy_by_item_type_int_value=glmer(IsCorrectAnsOld ~ 1 + isGo.* PairType + (1|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial) 
@@ -172,8 +173,8 @@ means_isold_accuracy=c(mean(with(data=subset(recognition_probe_items,isGo.==1), 
   # modelling HH vs. rest
   recognition_probe_items$is_hh=recognition_probe_items$PairType=="HH"
   # Logistic regression analysis
-  accuracy_isold_results_all_items=summary(glmer(IsCorrectAnsOld ~ 1 + isGo. + is_hh + (1|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
-  accuracy_isold_results_all_items_with_interaction=summary(glmer(IsCorrectAnsOld ~ 1 + isGo.*is_hh + (1|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
+  accuracy_isold_results_all_items=summary(glmer(IsCorrectAnsOld ~ 1 + isGo. + is_hh + (1 + go.ind + is_hh|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
+  accuracy_isold_results_all_items_with_interaction=summary(glmer(IsCorrectAnsOld ~ 1 + isGo.*is_hh + (1 + is_hh|subjectID),data=recognition_probe_items,na.action=na.omit,family=binomial)) 
   accuracy_isold_results_HH_items=summary(glmer(IsCorrectAnsOld ~ 1 + isGo. + (1|subjectID),data=subset(recognition_probe_items,(recognition_probe_items$is_hh)),na.action=na.omit,family=binomial))
   accuracy_isold_results_rest_items=summary(glmer(IsCorrectAnsOld ~ 1 + isGo. + (1|subjectID),data=subset(recognition_probe_items,(!recognition_probe_items$is_hh)),na.action=na.omit,family=binomial))
   
@@ -328,9 +329,9 @@ means_isold_accuracy=c(mean(with(data=subset(recognition_probe_items,isGo.==1), 
   print(descriptive_results_RT)
   
   # linear regression analysis
-  model_RT_by_item_type=lmer(RT_isOld ~ isGo. + (1|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit)
-  model_RT_by_item_type_and_value=lmer(RT_isOld ~ isGo. + PairType + (1|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit) 
-  model_RT_by_item_type_int_value=lmer(RT_isOld ~ isGo. * PairType + (1|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit) 
+  model_RT_by_item_type=lmer(RT_isOld ~ isGo. + (1+ go.ind|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit)
+  model_RT_by_item_type_and_value=lmer(RT_isOld ~ isGo. + PairType + (1 + go.ind|subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit) 
+  model_RT_by_item_type_int_value=lmer(RT_isOld ~ isGo. * PairType + (1 + go.ind||subjectID),data=recognition_probe_items_correct_isOld,na.action=na.omit) 
   RT_main_effect_value=anova(model_RT_by_item_type, model_RT_by_item_type_and_value) # check the main effect of value category
   RT_interaction_effect=anova(model_RT_by_item_type_and_value, model_RT_by_item_type_int_value) # check effect of interaction
   summary_model_RT_by_item_type_and_value=summary(model_RT_by_item_type_and_value)
@@ -358,7 +359,7 @@ means_isold_accuracy=c(mean(with(data=subset(recognition_probe_items,isGo.==1), 
   df_RT$sd=c(RT_all_sd$Go[1],RT_all_sd$NoGo[1],RT_all_sd$Go[2],RT_all_sd$NoGo[2],RT_all_sd$Go[3],RT_all_sd$NoGo[3],RT_all_sd$Go[4],RT_all_sd$NoGo[4])
   df_RT$se=c(RT_all_se$Go[1],RT_all_se$NoGo[1],RT_all_se$Go[2],RT_all_se$NoGo[2],RT_all_se$Go[3],RT_all_se$NoGo[3],RT_all_se$Go[4],RT_all_se$NoGo[4])
   
-  df_RT$value_level = factor(df_RT$value_level, levels = df_RT$value_level) # for the value levels to be shown on the graph in the correct order (and not sorted by ABC)
+  df_RT$value_level = factor(df_RT$value_level, levels = unique(df_RT$value_level)) # for the value levels to be shown on the graph in the correct order (and not sorted by ABC)
   
   # plot properties
   plot_RT= ggplot(data=df_RT, aes(x=item_type, y=means, fill=value_level)) +
@@ -402,3 +403,5 @@ means_isold_accuracy=c(mean(with(data=subset(recognition_probe_items,isGo.==1), 
   descriptive_results_All$value_level=c("HH","HM","LM","LL","ALL")
   descriptive_results_All$accuracy=c(descriptive_results_accuracy$Go, descriptive_results_accuracy$NoGo, descriptive_results_accuracy$All)
   descriptive_results_All$RT=c(descriptive_results_RT$Go, descriptive_results_RT$NoGo, descriptive_results_RT$All)
+  
+  

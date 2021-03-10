@@ -44,7 +44,7 @@ for (session_num in sessions){
   # Logistic regression analysis
   high_value_results=summary(glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data_curr_session,(probe_data_curr_session$PairType2=='High_Value')),na.action=na.omit,family=binomial)) 
   low_value_results=summary(glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data_curr_session,(probe_data_curr_session$PairType2=='Low_Value')),na.action=na.omit,family=binomial))
-  high_low_difference_results=summary(glmer(Outcome ~ 1 + PairType + (1|subjectID),data=subset(probe_data_curr_session,probe_data_curr_session$PairType %in% c(1,2)),na.action=na.omit,family=binomial)) #effect of Go choice for HH vs LL
+  high_low_difference_results=summary(glmer(Outcome ~ 1 + PairType + (1 + PairType|subjectID),data=subset(probe_data_curr_session,probe_data_curr_session$PairType %in% c(1,2)),na.action=na.omit,family=binomial)) #effect of Go choice for HH vs LL
   sanity_high_low_results=summary(glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data_curr_session,(probe_data_curr_session$PairType==3)),na.action=na.omit,family=binomial)) 
   sanity_same_value_results=summary(glmer(Outcome ~ 1 + (1|subjectID),data=subset(probe_data_curr_session,(probe_data_curr_session$PairType==4 | probe_data_curr_session$PairType==5)),na.action=na.omit,family=binomial)) 
   
@@ -56,7 +56,7 @@ for (session_num in sessions){
   
   colnames(Results_df)=colnames(high_value_results$coefficients)
   # add indicator for comparison type
-  Results_df$pairtype = c("high-value", "low-value", "high-low difference", "sanity high-low", "sanity same value")
+  Results_df$pairtype = c("High-value", "Low-value", "high-low difference", "sanity high-low", "sanity same value")
   
   # Add mean proportion of trials participants chose Go, and standard error of the means (SEM)
   Results_df$means=NA
@@ -80,7 +80,7 @@ for (session_num in sessions){
 } # up to here the loop on sessions
 
 
-Results_df_go_nogo=Results_df_all_sessions[Results_df_all_sessions$pairtype=='high-value' | Results_df_all_sessions$pairtype=='low-value',]
+Results_df_go_nogo=Results_df_all_sessions[Results_df_all_sessions$pairtype=='High-value' | Results_df_all_sessions$pairtype=='Low-value',]
 Results_df_go_nogo$label=paste("Session",as.character(Results_df_go_nogo$session),sep=" ")
 Results_df_go_nogo$label[Results_df_go_nogo$label=="Session 3"] = "Follow-up Session"
 Results_df_go_nogo$label=factor(Results_df_go_nogo$label, levels = c("Session 1","Session 2", "Follow-up Session"))
@@ -95,16 +95,18 @@ plot_proportions=ggplot(data=Results_df_go_nogo, aes(x=label, y=means, fill=pair
   geom_bar(width=0.7,colour="black",position=position_dodge(0.7), stat="identity") + # Bar plot
   theme_bw() + # white background
   #theme(legend.position="top",legend.title=element_blank()) + # position legend
-  theme(legend.position="none") + # remove legend
+  theme(legend.position="bottom", legend.title = element_blank()) + # remove legend
   theme(axis.title.x=element_blank(),axis.line = element_line(colour = "black"), panel.border = element_blank(), panel.background = element_blank()) + # axis and background formating
   theme(aspect.ratio=2/length(sessions),text = element_text(size=24)) + # aspect ratio and font size
   geom_errorbar(position=position_dodge(0.7), width=1/4, aes(ymin=Results_df_go_nogo$means-Results_df_go_nogo$SEM, ymax=Results_df_go_nogo$means+Results_df_go_nogo$SEM))  + # add error bar of SEM
   scale_y_continuous("Proportion of trials Go items were chosen",limit=c(0,1),breaks=seq(0, 1, 0.1),expand = c(0,0)) + # define y axis properties
   scale_fill_manual(values=c("#585858","#D8D8D8")) + # color of bars
   geom_abline(intercept = (0.5),slope=0,linetype =2, size = 1,show.legend=TRUE,aes()) + # chace level 50% reference line
-  geom_text(position=position_dodge(0.7),aes(y=asteriks_loc,label=(asteriks)),size=12) # significance asteriks
+  geom_text(position=position_dodge(0.7),aes(y=asteriks_loc,label=(asteriks)),size=12) + # significance asteriks
+  ggtitle("Pilot Experiment - Probe Results")+
+  theme(plot.title = element_text(hjust = 0.5, size = 18))
 
- # add high-value - low-value differential effect significance asteriks - if needed (if in the correct direction)
+ # add High-value - Low-value differential effect significance asteriks - if needed (if in the correct direction)
 for (i in sessions) {
   row_loc=(i-1)*5+3
   if (Results_df_all_sessions$`Pr(>|z|)`[row_loc]<0.05 & Results_df_all_sessions$Estimate[row_loc]<0) {
@@ -117,7 +119,6 @@ for (i in sessions) {
       annotate("text", x = i, y = Lines_hight+0.02, label = (Results_df_all_sessions$asteriks[row_loc]),size=12) # differential effect significance asteriks
   }
 }
-dev.new(width=1.5*length(sessions), height=8)
 print(plot_proportions)
 
 # create statistics table
