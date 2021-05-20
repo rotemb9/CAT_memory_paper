@@ -8,12 +8,12 @@ rm(list=ls())
 
 # Define the local path where the data can be found
 # you will need to set the correct path whre the RData file with the data is located
-input_file_path="DEFINE PATH OF DATA HERE"
+input_path="DEFINE PATH OF DATA HERE"
 
 experiment_name = "bmem_short"
 
 # load data
-input_filename=paste(input_file_path, experiment_name, "_recognition.Rdata",sep="")  
+input_filename=paste(input_path, experiment_name, "_recognition.Rdata",sep="")  
 load(file=input_filename)
 
 # Statistics

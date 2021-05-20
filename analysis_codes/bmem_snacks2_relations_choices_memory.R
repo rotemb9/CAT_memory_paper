@@ -16,7 +16,7 @@ experiment_name="bmem_snacks2"
 
 # Define the local path where the data can be found
 # you will need to set the correct path whre the RData file with the data is located
-input_file_path="DEFINE PATH OF DATA HERE"
+input_path="DEFINE PATH OF DATA HERE"
 
 # load data
 filename=paste(input_path,experiment_name,"_probe", sessionNum_probe, "_recognition", sessionNum_recognition, ".Rdata",sep="")

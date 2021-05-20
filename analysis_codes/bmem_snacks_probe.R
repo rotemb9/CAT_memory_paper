@@ -7,7 +7,7 @@ rm(list=ls())
 
 # Define the local path where the data can be found
 # you will need to set the correct path whre the RData file with the data is located
-input_file_path="DEFINE PATH OF DATA HERE"
+input_path="DEFINE PATH OF DATA HERE"
 
 experiment_name = "bmem_snacks"
 
@@ -16,9 +16,9 @@ sessions = 1:3
 
 # load data
 if (length(sessions==3)){
-  input_filename=paste(input_file_path, experiment_name, "_probe_all_sessions.Rdata",sep="")  
+  input_filename=paste(input_path, experiment_name, "_probe_all_sessions.Rdata",sep="")  
 } else {
-  input_filename=paste(input_file_path, experiment_name, "_probe_session_", as.character(sessions),".Rdata",sep="")
+  input_filename=paste(input_path, experiment_name, "_probe_session_", as.character(sessions),".Rdata",sep="")
 }
 load(file=input_filename)
 

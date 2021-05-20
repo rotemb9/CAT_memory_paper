@@ -8,21 +8,21 @@ rm(list=ls())
 # load recognition data for all experiments
 # Define the local path where the data can be found
 # you will need to set the correct path whre the RData file with the data is located
-input_file_path="DEFINE PATH OF DATA HERE"
+input_path="DEFINE PATH OF DATA HERE"
 
 recognition_data_all_experiments=c()
 experiments_names = c("bmem_snacks", "bmem_snacks2","bmem_short")
 for (exp_ind in 1:length(experiments_names)){
   experiment_name=experiments_names[exp_ind]
   if (experiment_name=="bmem_short"){
-    input_filename=paste(input_file_path, experiment_name, "_recognition.Rdata",sep="")
+    input_filename=paste(input_path, experiment_name, "_recognition.Rdata",sep="")
     load(file=input_filename) 
     rm(recognition_probe_items, recognition_old_items)
     recognition_data$experiment=experiment_name
     recognition_data$session=NA
     recognition_data_all_experiments=rbind(recognition_data_all_experiments,recognition_data)
   } else {
-    input_filename=paste(input_file_path, experiment_name, "_recognition_all_sessions.Rdata",sep="")
+    input_filename=paste(input_path, experiment_name, "_recognition_all_sessions.Rdata",sep="")
     load(file=input_filename) 
     recognition_data_all_sessions$experiment=experiment_name
     recognition_data_all_sessions$PairType=NA
