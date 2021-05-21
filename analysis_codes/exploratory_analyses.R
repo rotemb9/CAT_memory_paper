@@ -1,6 +1,7 @@
 # Required R package
 library(lme4)
 library(lmerTest)
+library(tidyverse)
 
 # Clear workspace
 rm(list=ls())
@@ -215,3 +216,70 @@ print(paste("Number of incorrect responses gonogo go = ", num_incorrect_go_items
 print(paste("Number of incorrect responses gonogo nogo = ", num_incorrect_nogo_items_gonogo, sep=""))
 print("Interaction Go/NoGo and correct/incorrect responses:")
 print(paste("two-sided p = ",round(interaction_RTs_gonogo$coefficients[5,5],3)))
+
+
+### Probe RT analysis
+# read probe data from all experiments and sessions and combine them
+
+probe_data_all_experiments=c()
+data_files = c("bmem_snacks2_probe2_recognition2.Rdata",
+               "bmem_snacks2_probe3_recognition3.Rdata",
+               "bmem_short_probe_recognition.Rdata",
+               "bmem_snacks_probe2_recognition2.Rdata",
+               "bmem_snacks_probe3_recognition3.Rdata")
+experiment_names = c("bmem_snacks2",
+                     "bmem_snacks2",
+                     "bmem_short",
+                     "bmem_snacks",
+                     "bmem_snacks")
+sessions = c(2,3,1,2,3)
+
+for (data_ind in 1:length(data_files)){
+  full_filename = file.path(input_path,data_files[data_ind])
+  load(file=full_filename)
+  probe_data$experiment_name = experiment_names[data_ind]
+  probe_data$session = sessions[data_ind]
+  if (experiment_names[data_ind] != "bmem_short"){
+    probe_data$PairType3 = factor(probe_data$PairType2, levels = c("Low_Value","High_Value"))
+  }
+  rm(recognition_data,recognition_probe_items, recognition_probe_items_correct_isGo, recognition_probe_items_correct_isOld,probe_only_remembered_items)
+  probe_data_all_experiments=rbind(probe_data_all_experiments,probe_data)
+}
+
+rm(probe_data)
+
+probe_data_all_experiments$Outcome = as.logical(probe_data_all_experiments$Outcome)
+probe_data_all_experiments$Accuracy_old_chosen_item[!is.na(probe_data_all_experiments$Outcome) & probe_data_all_experiments$Outcome & probe_data_all_experiments$PairType2 %in% c("High_Value", "Low_Value")] = probe_data_all_experiments$Accuracy_old_goItem[!is.na(probe_data_all_experiments$Outcome) & probe_data_all_experiments$Outcome & probe_data_all_experiments$PairType2 %in% c("High_Value", "Low_Value")]
+probe_data_all_experiments$Accuracy_old_chosen_item[!is.na(probe_data_all_experiments$Outcome) & !probe_data_all_experiments$Outcome & probe_data_all_experiments$PairType2 %in% c("High_Value", "Low_Value")] = probe_data_all_experiments$Accuracy_old_nogoItem[!is.na(probe_data_all_experiments$Outcome) & !probe_data_all_experiments$Outcome & probe_data_all_experiments$PairType2 %in% c("High_Value", "Low_Value")]
+probe_data_all_experiments$Accuracy_old_unchosen_item[!is.na(probe_data_all_experiments$Outcome) & probe_data_all_experiments$Outcome & probe_data_all_experiments$PairType2 %in% c("High_Value", "Low_Value")] = probe_data_all_experiments$Accuracy_old_nogoItem[!is.na(probe_data_all_experiments$Outcome) & probe_data_all_experiments$Outcome & probe_data_all_experiments$PairType2 %in% c("High_Value", "Low_Value")]
+probe_data_all_experiments$Accuracy_old_unchosen_item[!is.na(probe_data_all_experiments$Outcome) & !probe_data_all_experiments$Outcome & probe_data_all_experiments$PairType2 %in% c("High_Value", "Low_Value")] = probe_data_all_experiments$Accuracy_old_goItem[!is.na(probe_data_all_experiments$Outcome) & !probe_data_all_experiments$Outcome & probe_data_all_experiments$PairType2 %in% c("High_Value", "Low_Value")]
+
+# model
+probe_RT_HV = summary(lmer(RT ~ 1 + Outcome + Accuracy_old_chosen_item + (1 + Outcome + Accuracy_old_chosen_item|subjectID),data=subset(probe_data_all_experiments,probe_data_all_experiments$PairType2 == "High_Value"),na.action=na.omit)) 
+
+# Get the numbers
+relevant_data = probe_data_all_experiments[probe_data_all_experiments$PairType2 %in% c("High_Value","Low_Value"),]
+probe_RT_by_chosen_accuracy = aggregate(x = relevant_data$RT,
+          by = list(Accuracy_old_chosen_item = relevant_data$Accuracy_old_chosen_item, PairType2 = relevant_data$PairType2),
+          function(x) c(mean = mean(x,na.rm = T), sd = sd(x,na.rm = T), n = length(x)))
+
+probe_RT_by_outcome = aggregate(x = relevant_data$RT,
+                                        by = list(Outcome = relevant_data$Outcome, PairType2 = relevant_data$PairType2),
+                                        function(x) c(mean = mean(x,na.rm = T), sd = sd(x,na.rm = T), n = length(x)))
+
+### probe: Go remembered, NoGo forgotten vs. Go forgotten, NoGo remembered
+probe_data_all_experiments$accuracy_category = NA
+probe_data_all_experiments$accuracy_category[(probe_data_all_experiments$Accuracy_old_goItem & probe_data_all_experiments$Accuracy_old_nogoItem) | (!probe_data_all_experiments$Accuracy_old_goItem & !probe_data_all_experiments$Accuracy_old_nogoItem)] = "Both remembered / forgotten"
+probe_data_all_experiments$accuracy_category[probe_data_all_experiments$Accuracy_old_goItem & !probe_data_all_experiments$Accuracy_old_nogoItem] = "Go remembered, NoGo forgotten"
+probe_data_all_experiments$accuracy_category[!probe_data_all_experiments$Accuracy_old_goItem & probe_data_all_experiments$Accuracy_old_nogoItem] = "Go forgotten, NoGo remembered"
+probe_data_all_experiments$accuracy_category = relevel(factor(probe_data_all_experiments$accuracy_category), ref = "Both remembered / forgotten")
+probe_data_all_experiments$accuracy_category2[probe_data_all_experiments$Accuracy_old_chosen_item == probe_data_all_experiments$Accuracy_old_unchosen_item] = "Both remembered / forgotten"
+probe_data_all_experiments$accuracy_category2[probe_data_all_experiments$Accuracy_old_chosen_item & !probe_data_all_experiments$Accuracy_old_unchosen_item] = "Chosen remembered, unchosen forgotten"
+probe_data_all_experiments$accuracy_category2[!probe_data_all_experiments$Accuracy_old_chosen_item & probe_data_all_experiments$Accuracy_old_unchosen_item] = "Chosen forgotten, unchosen remembered"
+probe_data_all_experiments$accuracy_category2 = relevel(factor(probe_data_all_experiments$accuracy_category2), ref = "Both remembered / forgotten")
+probe_data_all_experiments$accuracy_category_without_both = probe_data_all_experiments$accuracy_category
+probe_data_all_experiments$accuracy_category_without_both[probe_data_all_experiments$accuracy_category_without_both == "Both remembered / forgotten"] = NA
+probe_data_all_experiments$accuracy_category_without_both = droplevels(probe_data_all_experiments$accuracy_category_without_both)
+
+probe_choices_HV_accuracy_category = summary(glmer(Outcome ~ 1 + accuracy_category_without_both + (1 + accuracy_category_without_both|subjectID) + (1|experiment_name),data=subset(probe_data_all_experiments,(probe_data_all_experiments$PairType2=='High_Value')),na.action=na.omit,family=binomial)) 
+probe_choices_LV_accuracy_category = summary(glmer(Outcome ~ 1 + accuracy_category_without_both + (1 + accuracy_category_without_both|subjectID) + (1|experiment_name),data=subset(probe_data_all_experiments,(probe_data_all_experiments$PairType2=='Low_Value')),na.action=na.omit,family=binomial)) 
