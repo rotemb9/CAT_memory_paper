@@ -256,16 +256,20 @@ probe_data_all_experiments$Accuracy_old_unchosen_item[!is.na(probe_data_all_expe
 
 # model
 probe_RT_HV = summary(lmer(RT ~ 1 + Outcome + Accuracy_old_chosen_item + (1 + Outcome + Accuracy_old_chosen_item|subjectID),data=subset(probe_data_all_experiments,probe_data_all_experiments$PairType2 == "High_Value"),na.action=na.omit)) 
+probe_RT_LV = summary(lmer(RT ~ 1 + Outcome + Accuracy_old_chosen_item + (1 + Outcome + Accuracy_old_chosen_item|subjectID),data=subset(probe_data_all_experiments,probe_data_all_experiments$PairType2 == "Low_Value"),na.action=na.omit)) 
 
 # Get the numbers
 relevant_data = probe_data_all_experiments[probe_data_all_experiments$PairType2 %in% c("High_Value","Low_Value"),]
-probe_RT_by_chosen_accuracy = aggregate(x = relevant_data$RT,
-          by = list(Accuracy_old_chosen_item = relevant_data$Accuracy_old_chosen_item, PairType2 = relevant_data$PairType2),
-          function(x) c(mean = mean(x,na.rm = T), sd = sd(x,na.rm = T), n = length(x)))
 
-probe_RT_by_outcome = aggregate(x = relevant_data$RT,
-                                        by = list(Outcome = relevant_data$Outcome, PairType2 = relevant_data$PairType2),
-                                        function(x) c(mean = mean(x,na.rm = T), sd = sd(x,na.rm = T), n = length(x)))
+mean_RT_HV_chosen_rem = round(mean(with(data=subset(probe_data_all_experiments,PairType2=="High_Value" & Accuracy_old_chosen_item), tapply(RT, subjectID, mean, na.rm=T)),na.rm=T),3)
+mean_RT_HV_chosen_for = round(mean(with(data=subset(probe_data_all_experiments,PairType2=="High_Value" & !Accuracy_old_chosen_item), tapply(RT, subjectID, mean, na.rm=T)),na.rm=T),3)
+mean_RT_LV_chosen_rem = round(mean(with(data=subset(probe_data_all_experiments,PairType2=="Low_Value" & Accuracy_old_chosen_item), tapply(RT, subjectID, mean, na.rm=T)),na.rm=T),3)
+mean_RT_LV_chosen_for = round(mean(with(data=subset(probe_data_all_experiments,PairType2=="Low_Value" & !Accuracy_old_chosen_item), tapply(RT, subjectID, mean, na.rm=T)),na.rm=T),3)
+
+mean_RT_HV_chosen_go = round(mean(with(data=subset(probe_data_all_experiments,PairType2=="High_Value" & Outcome), tapply(RT, subjectID, mean, na.rm=T)),na.rm=T),3)
+mean_RT_HV_chosen_nogo = round(mean(with(data=subset(probe_data_all_experiments,PairType2=="High_Value" & !Outcome), tapply(RT, subjectID, mean, na.rm=T)),na.rm=T),3)
+mean_RT_LV_chosen_go = round(mean(with(data=subset(probe_data_all_experiments,PairType2=="Low_Value" & Outcome), tapply(RT, subjectID, mean, na.rm=T)),na.rm=T),3)
+mean_RT_LV_chosen_nogo = round(mean(with(data=subset(probe_data_all_experiments,PairType2=="Low_Value" & !Outcome), tapply(RT, subjectID, mean, na.rm=T)),na.rm=T),3)
 
 ### probe: Go remembered, NoGo forgotten vs. Go forgotten, NoGo remembered
 probe_data_all_experiments$accuracy_category = NA
@@ -281,5 +285,24 @@ probe_data_all_experiments$accuracy_category_without_both = probe_data_all_exper
 probe_data_all_experiments$accuracy_category_without_both[probe_data_all_experiments$accuracy_category_without_both == "Both remembered / forgotten"] = NA
 probe_data_all_experiments$accuracy_category_without_both = droplevels(probe_data_all_experiments$accuracy_category_without_both)
 
-probe_choices_HV_accuracy_category = summary(glmer(Outcome ~ 1 + accuracy_category_without_both + (1 + accuracy_category_without_both|subjectID) + (1|experiment_name),data=subset(probe_data_all_experiments,(probe_data_all_experiments$PairType2=='High_Value')),na.action=na.omit,family=binomial)) 
-probe_choices_LV_accuracy_category = summary(glmer(Outcome ~ 1 + accuracy_category_without_both + (1 + accuracy_category_without_both|subjectID) + (1|experiment_name),data=subset(probe_data_all_experiments,(probe_data_all_experiments$PairType2=='Low_Value')),na.action=na.omit,family=binomial)) 
+probe_choices_HV_accuracy_category = summary(glmer(Outcome ~ 1 + accuracy_category_without_both + (1 + accuracy_category_without_both|subjectID) + (1|experiment_name),data=subset(probe_data_all_experiments,(probe_data_all_experiments$PairType2=="High_Value")),na.action=na.omit,family=binomial))
+probe_choices_LV_accuracy_category = summary(glmer(Outcome ~ 1 + accuracy_category_without_both + (1 + accuracy_category_without_both|subjectID) + (1|experiment_name),data=subset(probe_data_all_experiments,(probe_data_all_experiments$PairType2=="Low_Value")),na.action=na.omit,family=binomial))
+
+## get the statistics for the manuscript
+# means
+mean_HV_go_rem_nogo_for = mean(with(data=subset(probe_data_all_experiments,PairType2=="High_Value" & accuracy_category_without_both=="Go remembered, NoGo forgotten"), tapply(Outcome, subjectID, mean, na.rm=T)),na.rm=T)
+mean_HV_go_for_nogo_rem = mean(with(data=subset(probe_data_all_experiments,PairType2=="High_Value" & accuracy_category_without_both=="Go forgotten, NoGo remembered"), tapply(Outcome, subjectID, mean, na.rm=T)),na.rm=T)
+mean_LV_go_rem_nogo_for = mean(with(data=subset(probe_data_all_experiments,PairType2=="Low_Value" & accuracy_category_without_both=="Go remembered, NoGo forgotten"), tapply(Outcome, subjectID, mean, na.rm=T)),na.rm=T)
+mean_LV_go_for_nogo_rem = mean(with(data=subset(probe_data_all_experiments,PairType2=="Low_Value" & accuracy_category_without_both=="Go forgotten, NoGo remembered"), tapply(Outcome, subjectID, mean, na.rm=T)),na.rm=T)
+
+# OR
+probe_choices_HV_accuracy_category_coef = as.data.frame(probe_choices_HV_accuracy_category$coefficients)
+HV_OR = round(exp(probe_choices_HV_accuracy_category_coef$Estimate[2]),3)
+probe_choices_LV_accuracy_category_coef = as.data.frame(probe_choices_LV_accuracy_category$coefficients)
+LV_OR = round(exp(probe_choices_LV_accuracy_category_coef$Estimate[2]),3)
+
+# CI
+HV_CI_min=round(exp(probe_choices_HV_accuracy_category_coef$Estimate[2]-1.96*probe_choices_HV_accuracy_category_coef$`Std. Error`[2]),3)
+HV_CI_max=round(exp(probe_choices_HV_accuracy_category_coef$Estimate[2]+1.96*probe_choices_HV_accuracy_category_coef$`Std. Error`[2]),3)
+LV_CI_min=round(exp(probe_choices_LV_accuracy_category_coef$Estimate[2]-1.96*probe_choices_LV_accuracy_category_coef$`Std. Error`[2]),3)
+LV_CI_max=round(exp(probe_choices_LV_accuracy_category_coef$Estimate[2]+1.96*probe_choices_LV_accuracy_category_coef$`Std. Error`[2]),3)
