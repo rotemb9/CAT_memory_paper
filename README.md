@@ -6,11 +6,11 @@ Memory for Individual Items is Related to Non-Reinforced Preference Change
 
 Rotem Botvinik-Nezer, Akram Bakkour, Tom Salomon, Daphna Shohamy and Tom Schonberg
 
-Currently on bioRxiv:
+Published paper: https://doi.org/10.1101/lm.053411.121
 
-*** https://doi.org/10.1101/621292 ***
+Preprint: https://doi.org/10.1101/621292
 
-First release (preprint version): https://doi.org/10.5281/zenodo.3633203
+Released versions of code: https://doi.org/10.5281/zenodo.3633202
 
 1. Directory "experiment_codes" includes the codes for running the experiment.
 * Pilot Experiment- "bmem_snacks"
@@ -27,6 +27,6 @@ http://schonberglab.tau.ac.il/resources/snack-food-image-database/
 
 2. Directory "analysis_codes" includes the codes for analyzing the data from all experiments.
 The analysis was performed with R version 3.6.3
-To run the codes you need to insert the correct path of the data files at beginning of the code.
+To run the codes you need to insert the correct path of the data files at the beginning of the code.
 
 3. Directory "data" includes the data from all experiments as Rdata files.
